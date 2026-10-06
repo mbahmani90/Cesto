@@ -44,6 +44,8 @@
   <path class="dep" d="M520,460 L330,568" marker-end="url(#arrow)"/>
   <path class="dep" d="M580,460 L500,568" marker-end="url(#arrow)"/>
   <path class="dep" d="M650,460 L640,568" marker-end="url(#arrow)"/>
+  <path class="dep" d="M410,460 L455,568" marker-end="url(#arrow)"/>
+  <path class="dep" d="M685,460 L790,568" marker-end="url(#arrow)"/>
   <!-- :feature:settings -> :llm -->
   <path class="dep" d="M830,460 L832,568" marker-end="url(#arrow)"/>
   <!-- :llm -> :core (HttpClient) -->
@@ -80,7 +82,7 @@
   <rect class="feature" x="266" y="370" width="200" height="90" rx="12"/>
   <text class="h" x="282" y="398">:feature:chat</text>
   <text class="t" x="282" y="422">Ask tab</text>
-  <text class="t" x="282" y="442">placeholder for now</text>
+  <text class="t" x="282" y="442">agent loop + SQL tools</text>
 
   <rect class="feature" x="492" y="370" width="200" height="90" rx="12"/>
   <text class="h" x="508" y="398">:feature:receipts</text>
@@ -106,7 +108,7 @@
   <rect class="shared" x="390" y="570" width="166" height="90" rx="12"/>
   <text class="h" x="404" y="598">:database</text>
   <text class="t" x="404" y="622">SQLDelight</text>
-  <text class="t" x="404" y="642">receipts + text</text>
+  <text class="t" x="404" y="642">receipts · items</text>
 
   <rect class="shared" x="570" y="570" width="166" height="90" rx="12"/>
   <text class="h" x="584" y="598">:core</text>
@@ -133,6 +135,6 @@
   <text class="t" x="102" y="752">Gradle dependency</text>
   <path class="impl" d="M260,748 L320,748" marker-end="url(#arrow-impl)"/>
   <text class="t" x="332" y="752">implements GmailAuthorizer, passed to initKoin()</text>
-  <text class="note" x="30" y="776">Not drawn: :app depends on every module (Koin graph); every feature uses :systemdesign.</text>
+  <text class="note" x="30" y="776">Not drawn: :app depends on every module (Koin graph); every feature uses :systemdesign; :feature:chat also uses :llm and :core.</text>
   <text class="note" x="30" y="794">Features never depend on each other; :app wires them with navigation lambdas. Shared modules never depend upward.</text>
 </svg>
