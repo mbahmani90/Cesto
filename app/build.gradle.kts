@@ -19,7 +19,7 @@ kotlin {
     }
     
     android {
-       namespace = "com.majidbahmani.cesto.shared"
+       namespace = "com.majidbahmani.cesto.app"
        compileSdk = libs.versions.android.compileSdk.get().toInt()
        minSdk = libs.versions.android.minSdk.get().toInt()
     

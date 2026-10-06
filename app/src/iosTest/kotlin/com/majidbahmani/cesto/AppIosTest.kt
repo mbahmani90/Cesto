@@ -3,7 +3,7 @@ package com.majidbahmani.cesto
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class SharedLogicAndroidHostTest {
+class AppIosTest {
 
     @Test
     fun example() {

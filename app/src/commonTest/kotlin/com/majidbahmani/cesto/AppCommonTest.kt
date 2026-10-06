@@ -3,7 +3,7 @@ package com.majidbahmani.cesto
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class SharedCommonTest {
+class AppCommonTest {
 
     @Test
     fun example() {

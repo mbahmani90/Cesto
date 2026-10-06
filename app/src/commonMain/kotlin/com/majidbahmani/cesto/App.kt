@@ -16,8 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.painterResource
 
-import cesto.shared.generated.resources.Res
-import cesto.shared.generated.resources.compose_multiplatform
+import cesto.app.generated.resources.Res
+import cesto.app.generated.resources.compose_multiplatform
 
 @Composable
 @Preview
