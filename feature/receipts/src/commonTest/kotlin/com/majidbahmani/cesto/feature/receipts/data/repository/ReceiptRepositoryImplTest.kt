@@ -11,7 +11,9 @@ import com.majidbahmani.cesto.feature.receipts.domain.model.SyncFailure
 import com.majidbahmani.cesto.feature.receipts.domain.model.SyncResult
 import com.majidbahmani.cesto.feature.receipts.fake.FakeGmailApi
 import com.majidbahmani.cesto.feature.receipts.fake.FakeGmailApi.Mail
+import com.majidbahmani.cesto.feature.receipts.fake.FakeGeminiKeyStore
 import com.majidbahmani.cesto.feature.receipts.fake.FakePdfTextExtractor
+import com.majidbahmani.cesto.feature.receipts.fake.FakeReceiptItemExtractor
 import com.majidbahmani.cesto.feature.receipts.fake.FakeReceiptFileStore
 import com.majidbahmani.cesto.feature.receipts.fake.createTestDriver
 import com.majidbahmani.cesto.gmailauth.GmailAuthError
@@ -32,6 +34,8 @@ class ReceiptRepositoryImplTest {
     private var gmail = FakeGmailApi(pageSize = 2)
     private val files = FakeReceiptFileStore()
     private val extractor = FakePdfTextExtractor()
+    private val itemExtractor = FakeReceiptItemExtractor()
+    private val geminiKeys = FakeGeminiKeyStore(initial = null) // no key: item extraction skipped unless a test sets one
 
     @AfterTest
     fun tearDown() = driver.close()
@@ -42,6 +46,8 @@ class ReceiptRepositoryImplTest {
         files = files,
         textExtractor = extractor,
         parser = ContinenteReceiptParser(),
+        itemExtractor = itemExtractor,
+        geminiKeys = geminiKeys,
         currentTimeMillis = { NOW },
         maxParallelEmails = maxParallelEmails,
     )
@@ -245,6 +251,85 @@ class ReceiptRepositoryImplTest {
         val row = rows().single()
         assertEquals("TEXT_EXTRACTED", row.status)
         assertEquals(null, row.total_cents)
+    }
+
+    @Test
+    fun withoutGeminiKey_receiptsStayAtText_andNothingIsSent() = runTest {
+        gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = mapOf("1" to pdf(PDFBOX_RECEIPT)))
+
+        repository().sync(lookBackMonths = 3)
+
+        assertEquals("TEXT_EXTRACTED", rows().single().status)
+        assertTrue(itemExtractor.sentSections.isEmpty())
+    }
+
+    @Test
+    fun withGeminiKey_itemsAreSaved_onlyTheSectionIsSent_productsShared() = runTest {
+        geminiKeys.key.value = "AIza-test"
+        gmail.mailbox += Mail("m2", receivedAt = 2_000, pdfs = mapOf("1" to pdf(PDFBOX_RECEIPT)))
+        gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = mapOf("1" to pdf(PDFBOX_RECEIPT)))
+
+        repository().sync(lookBackMonths = 3)
+
+        assertTrue(rows().all { it.status == "READY" })
+        assertEquals(2, itemExtractor.sentSections.size)
+        itemExtractor.sentSections.forEach { section ->
+            listOf("NIF", "Cartao cliente", "ATCUD", "TOTAL A PAGAR").forEach { assertTrue(it !in section, it) }
+        }
+        assertEquals(2, database.productQueries.count().executeAsOne()) // milk + banana, once each
+        assertEquals(4, database.receiptItemQueries.count().executeAsOne()) // 2 lines × 2 receipts
+        val banana = database.receiptItemQueries.selectByReceipt(rows().first().id).executeAsList()[1]
+        assertEquals("KG", banana.unit)
+        assertEquals(90, banana.line_total_cents)
+    }
+
+    @Test
+    fun keyAddedLater_extractsReceiptsReadBefore_withoutGmail() = runTest {
+        gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = mapOf("1" to pdf(PDFBOX_RECEIPT)))
+        val repository = repository()
+        repository.sync(lookBackMonths = 3)
+        gmail.fetchedMessages.clear()
+
+        geminiKeys.key.value = "AIza-test"
+        repository.sync(lookBackMonths = 3)
+
+        assertEquals("READY", rows().single().status)
+        assertTrue(gmail.fetchedMessages.isEmpty())
+    }
+
+    @Test
+    fun quotaOrRejectedKey_keepsReceiptsAtText_forTheNextSync() = runTest {
+        geminiKeys.key.value = "AIza-test"
+        itemExtractor.unavailable = true
+        gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = mapOf("1" to pdf(PDFBOX_RECEIPT)))
+
+        val result = repository().sync(lookBackMonths = 3)
+
+        assertEquals(SyncResult.Success(newReceipts = 1, downloaded = 1), result) // the sync itself worked
+        assertEquals("TEXT_EXTRACTED", rows().single().status)
+    }
+
+    @Test
+    fun oneBadExtraction_doesNotStopTheOthers() = runTest {
+        geminiKeys.key.value = "AIza-test"
+        itemExtractor.failFor = "BROKEN LINE"
+        gmail.mailbox += Mail("m2", receivedAt = 2_000, pdfs = mapOf("1" to pdf(PDFBOX_RECEIPT)))
+        gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = mapOf("1" to pdf(PDFBOX_RECEIPT.replace("BANANA", "BROKEN LINE"))))
+
+        repository().sync(lookBackMonths = 3)
+
+        assertEquals(listOf("READY", "TEXT_EXTRACTED"), rows().map { it.status }) // newest first: m2, m1
+    }
+
+    @Test
+    fun noItemSection_nothingIsSent() = runTest {
+        geminiKeys.key.value = "AIza-test"
+        gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = mapOf("1" to pdf("Some other PDF")))
+
+        repository().sync(lookBackMonths = 3)
+
+        assertTrue(itemExtractor.sentSections.isEmpty())
+        assertEquals("TEXT_EXTRACTED", rows().single().status)
     }
 
     private companion object {

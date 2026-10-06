@@ -38,6 +38,7 @@ kotlin {
             implementation(project(":core"))
             implementation(project(":gmail-auth"))
             implementation(project(":database"))
+            implementation(project(":llm"))
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)
             implementation(libs.sqldelight.coroutines)

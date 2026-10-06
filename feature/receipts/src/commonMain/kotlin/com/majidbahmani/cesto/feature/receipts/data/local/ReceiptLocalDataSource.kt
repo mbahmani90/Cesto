@@ -4,6 +4,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import com.majidbahmani.cesto.database.CestoDatabase
 import com.majidbahmani.cesto.database.Receipt as ReceiptRow
+import com.majidbahmani.cesto.feature.receipts.data.extraction.ExtractedLine
 import com.majidbahmani.cesto.feature.receipts.data.parser.ParsedReceipt
 import com.majidbahmani.cesto.feature.receipts.data.remote.PdfAttachmentRef
 import com.majidbahmani.cesto.feature.receipts.domain.model.ReceiptStatus
@@ -19,6 +20,8 @@ class ReceiptLocalDataSource(
 ) {
     private val receipts = database.receiptQueries
     private val messages = database.gmailMessageQueries
+    private val products = database.productQueries
+    private val items = database.receiptItemQueries
 
     fun observeAll(): Flow<List<ReceiptRow>> = receipts.selectAll().asFlow().mapToList(ioDispatcher)
 
@@ -63,6 +66,36 @@ class ReceiptLocalDataSource(
             atcud = parsed.atcud,
             id = id,
         )
+    }
+
+    /**
+     * The receipt's lines and new products, then status READY, in one transaction: a receipt is never
+     * half extracted. Running it again replaces the lines (products are kept, matched by raw name).
+     */
+    suspend fun saveItems(receiptId: Long, lines: List<ExtractedLine>) = withContext(ioDispatcher) {
+        database.transaction {
+            items.deleteByReceipt(receiptId)
+            lines.forEachIndexed { index, line ->
+                val productId = if (line.kind == ExtractedLine.Kind.ITEM) {
+                    products.insertIfNew(line.rawName, line.normalizedName, line.category, line.unitsPerPack.toLong())
+                    products.idByRawName(line.rawName).executeAsOne()
+                } else {
+                    null
+                }
+                items.insert(
+                    receipt_id = receiptId,
+                    line_number = index.toLong(),
+                    kind = line.kind.name,
+                    product_id = productId,
+                    raw_name = line.rawName,
+                    quantity = line.quantity,
+                    unit = line.unit.name,
+                    unit_price_cents = line.unitPriceCents,
+                    line_total_cents = line.lineTotalCents,
+                )
+            }
+            receipts.markReady(receiptId)
+        }
     }
 
     suspend fun markFailed(id: Long) = withContext(ioDispatcher) {

@@ -2,11 +2,15 @@ package com.majidbahmani.cesto.feature.receipts.data.repository
 
 import com.majidbahmani.cesto.core.logging.logWarning
 import com.majidbahmani.cesto.database.Receipt as ReceiptRow
+import com.majidbahmani.cesto.feature.receipts.data.extraction.ExtractionUnavailableException
+import com.majidbahmani.cesto.feature.receipts.data.extraction.ReceiptItemExtractor
 import com.majidbahmani.cesto.feature.receipts.data.local.PdfTextExtractor
 import com.majidbahmani.cesto.feature.receipts.data.local.ReceiptFileStore
 import com.majidbahmani.cesto.feature.receipts.data.local.ReceiptLocalDataSource
 import com.majidbahmani.cesto.feature.receipts.data.mapper.toDomain
 import com.majidbahmani.cesto.feature.receipts.data.parser.ContinenteReceiptParser
+import com.majidbahmani.cesto.feature.receipts.data.parser.itemSection
+import com.majidbahmani.cesto.feature.receipts.data.parser.subtotalCents
 import com.majidbahmani.cesto.feature.receipts.data.remote.ContinenteReceipts
 import com.majidbahmani.cesto.feature.receipts.data.remote.GmailApi
 import com.majidbahmani.cesto.feature.receipts.data.remote.GmailNotAuthorizedException
@@ -23,14 +27,17 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import com.majidbahmani.cesto.llm.GeminiKeyStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 
 /**
- * Gmail → database → files → text. For each receipt: download the PDF, save the file, extract its
- * text on the phone, parse the fixed fields, save them (FOUND → DOWNLOADED → TEXT_EXTRACTED).
+ * Gmail → database → files → text → items. For each receipt: download the PDF, save the file, extract its
+ * text on the phone, parse the fixed fields, save them (FOUND → DOWNLOADED → TEXT_EXTRACTED); then, with a
+ * Gemini key, extract its items (→ READY). Only the receipt's item section is sent to Gemini.
  *
  * - Up to [maxParallelEmails] emails are handled at once; the next starts as soon as one finishes.
  * - Each email is read once: its PDFs are downloaded right away with the attachment ids from that
@@ -45,6 +52,8 @@ class ReceiptRepositoryImpl(
     private val files: ReceiptFileStore,
     private val textExtractor: PdfTextExtractor,
     private val parser: ContinenteReceiptParser,
+    private val itemExtractor: ReceiptItemExtractor,
+    private val geminiKeys: GeminiKeyStore,
     private val currentTimeMillis: () -> Long,
     private val maxParallelEmails: Int = 4,
 ) : ReceiptRepository {
@@ -71,6 +80,7 @@ class ReceiptRepositoryImpl(
             val texts = unread.map { receipt -> async { limit.withPermit { extractFromFile(receipt) } } }
             (newEmails + retries + texts).awaitAll().fold(Outcome(), Outcome::plus)
         }
+        extractItems(limit) // after the text step, so this sync's new receipts are included
         SyncResult.Success(outcome.newReceipts, outcome.downloaded, outcome.incomplete)
     } catch (e: CancellationException) {
         throw e
@@ -156,6 +166,49 @@ class ReceiptRepositoryImpl(
             local.markFailed(receiptId) // no text layer (scanned) or broken PDF: needs OCR, later
         } else {
             local.markTextExtracted(receiptId, text, parser.parse(text))
+        }
+    }
+
+    /**
+     * Gemini reads the item section of every receipt with text (TEXT_EXTRACTED). Skipped without a key.
+     * A rejected key or used-up quota stops this step; the rest waits for the next sync.
+     */
+    private suspend fun extractItems(limit: Semaphore) {
+        val key = geminiKeys.key.first() ?: return
+        val pending = local.receiptsWithStatus(ReceiptStatus.TEXT_EXTRACTED)
+        try {
+            coroutineScope {
+                pending.map { receipt -> async { limit.withPermit { extractItemsOf(key, receipt) } } }.awaitAll()
+            }
+        } catch (e: ExtractionUnavailableException) {
+            // The cause carries Gemini's error text (e.g. which quota was hit): Google's message, no receipt data.
+            logWarning(TAG, "sync: item extraction paused (${e.message}); retried next sync", e.cause)
+        }
+    }
+
+    private suspend fun extractItemsOf(key: String, receipt: ReceiptRow) {
+        val text = receipt.text ?: return
+        val section = itemSection(text)
+        if (section == null) {
+            logWarning(TAG, "sync: receipt ${receipt.id}: no item section found, nothing sent")
+            return
+        }
+        try {
+            val lines = itemExtractor.extract(key, section)
+            // Without a discount there's no SUBTOTAL line, and TOTAL A PAGAR is the sum of the lines.
+            val expected = subtotalCents(text) ?: receipt.total_cents
+            val sum = lines.sumOf { it.lineTotalCents }
+            if (expected != null && sum != expected) {
+                // Kept, but visible in the log: the cheapest way to find bad extractions.
+                logWarning(TAG, "sync: receipt ${receipt.id}: lines add up to $sum, receipt says $expected")
+            }
+            local.saveItems(receipt.id, lines)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: ExtractionUnavailableException) {
+            throw e
+        } catch (e: Exception) {
+            logWarning(TAG, "sync: receipt ${receipt.id}: item extraction failed, retried next sync", e)
         }
     }
 

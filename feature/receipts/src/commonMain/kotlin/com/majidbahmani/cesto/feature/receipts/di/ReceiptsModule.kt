@@ -1,6 +1,8 @@
 package com.majidbahmani.cesto.feature.receipts.di
 
 import com.majidbahmani.cesto.core.di.IoDispatcher
+import com.majidbahmani.cesto.feature.receipts.data.extraction.GeminiReceiptItemExtractor
+import com.majidbahmani.cesto.feature.receipts.data.extraction.ReceiptItemExtractor
 import com.majidbahmani.cesto.feature.receipts.data.local.ReceiptLocalDataSource
 import com.majidbahmani.cesto.feature.receipts.data.parser.ContinenteReceiptParser
 import com.majidbahmani.cesto.feature.receipts.data.remote.GmailApi
@@ -19,7 +21,7 @@ import kotlin.time.Clock
 /** ReceiptFileStore and PdfTextExtractor per platform (Android needs the Koin Android context). */
 internal expect val receiptPlatformModule: Module
 
-/** Needs HttpClient + IO dispatcher (:core), CestoDatabase (:database) and GmailAuthorizer (platform apps). */
+/** Needs HttpClient + IO dispatcher (:core), CestoDatabase (:database), GeminiApi + key (:llm), GmailAuthorizer (platform apps). */
 val receiptsModule = module {
     includes(receiptPlatformModule)
 
@@ -33,6 +35,7 @@ val receiptsModule = module {
         )
     }
     single { ContinenteReceiptParser() }
+    single<ReceiptItemExtractor> { GeminiReceiptItemExtractor(gemini = get()) }
     single<ReceiptRepository> {
         ReceiptRepositoryImpl(
             gmail = get(),
@@ -40,6 +43,8 @@ val receiptsModule = module {
             files = get(),
             textExtractor = get(),
             parser = get(),
+            itemExtractor = get(),
+            geminiKeys = get(),
             currentTimeMillis = { Clock.System.now().toEpochMilliseconds() },
         )
     }

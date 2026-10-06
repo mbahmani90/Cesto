@@ -1,0 +1,27 @@
+-- One row per unique product, as printed on Continente receipts (migration 2.sqm).
+-- The chat's findProducts tool searches here; later: Open Food Facts data and the embedding vector.
+CREATE TABLE product (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    -- Exactly as printed, without the VAT letter, e.g. "IOG GREGO NAT 4X125G": identifies the product.
+    raw_name TEXT NOT NULL UNIQUE,
+    -- Full Portuguese name, e.g. "Iogurte grego natural 4x125 g" (from the first extraction).
+    normalized_name TEXT NOT NULL,
+    -- The receipt's category header, e.g. "Laticinios/Beb. Veg.".
+    category TEXT,
+    -- Units in one pack ("4X125G" → 4), so "how many yogurts" counts yogurts, not packs.
+    units_per_pack INTEGER NOT NULL DEFAULT 1
+);
+
+-- A product seen before keeps its first names and category.
+insertIfNew:
+INSERT OR IGNORE INTO product(raw_name, normalized_name, category, units_per_pack)
+VALUES (?, ?, ?, ?);
+
+idByRawName:
+SELECT id FROM product WHERE raw_name = ?;
+
+count:
+SELECT COUNT(*) FROM product;
+
+deleteAll:
+DELETE FROM product;
