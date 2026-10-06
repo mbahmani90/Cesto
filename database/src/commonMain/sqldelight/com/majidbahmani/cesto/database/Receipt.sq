@@ -1,0 +1,38 @@
+-- One row per receipt PDF found in Gmail. Extracted data (date, total, items) comes later.
+CREATE TABLE receipt (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    gmail_message_id TEXT NOT NULL,
+    -- partId, not attachmentId: Gmail returns a different attachmentId on every request.
+    gmail_part_id TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    -- Gmail internalDate, epoch millis.
+    received_at INTEGER NOT NULL,
+    -- App-private file, null until downloaded.
+    pdf_path TEXT,
+    -- FOUND, DOWNLOADED, READY or FAILED (mapped to an enum in the data layer).
+    status TEXT NOT NULL,
+    UNIQUE (gmail_message_id, gmail_part_id)
+);
+
+CREATE INDEX receipt_received_at ON receipt(received_at);
+
+-- A second sync finds the same PDFs again: keep the existing row and its status.
+insertIfNew:
+INSERT OR IGNORE INTO receipt(gmail_message_id, gmail_part_id, file_name, received_at, status)
+VALUES (?, ?, ?, ?, 'FOUND');
+
+selectAll:
+SELECT * FROM receipt ORDER BY received_at DESC, id DESC;
+
+selectByStatus:
+SELECT * FROM receipt WHERE status = ? ORDER BY received_at DESC, id DESC;
+
+markDownloaded:
+UPDATE receipt SET pdf_path = ?, status = 'DOWNLOADED' WHERE id = ?;
+
+updateStatus:
+UPDATE receipt SET status = ? WHERE id = ?;
+
+-- "Disconnect Gmail" deletes all local data.
+deleteAll:
+DELETE FROM receipt;

@@ -1,6 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-// Receipts list from Gmail (and demo mode). For now a placeholder destination after onboarding.
+// Receipts from Gmail (and demo mode): Gmail REST client, later the sync and the receipt list.
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidMultiplatformLibrary)
@@ -24,14 +24,23 @@ kotlin {
         androidResources {
             enable = true
         }
+        withHostTest {}
     }
 
     sourceSets {
         commonMain.dependencies {
             implementation(project(":systemdesign"))
+            implementation(project(":core"))
+            implementation(project(":gmail-auth"))
+            implementation(libs.kotlinx.serialization.json)
             implementation(libs.navigation.compose)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
+        }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.ktor.client.mock)
         }
     }
 }

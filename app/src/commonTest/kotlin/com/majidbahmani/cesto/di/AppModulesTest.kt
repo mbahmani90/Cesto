@@ -1,6 +1,8 @@
 package com.majidbahmani.cesto.di
 
 import com.majidbahmani.cesto.feature.onboarding.presentation.viewmodel.OnboardingViewModel
+import com.majidbahmani.cesto.feature.receipts.data.remote.GmailApi
+import com.majidbahmani.cesto.feature.receipts.data.remote.KtorGmailApi
 import com.majidbahmani.cesto.gmailauth.GmailAuthError
 import com.majidbahmani.cesto.gmailauth.GmailAuthorizer
 import io.ktor.client.HttpClient
@@ -14,6 +16,7 @@ import org.koin.dsl.koinApplication
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertIs
 import kotlin.test.assertSame
 
 /** Koin resolves at runtime: a missing binding only shows up here, not at compile time. */
@@ -57,4 +60,12 @@ class AppModulesTest {
     fun onboardingViewModel_resolves() {
         app.koin.get<OnboardingViewModel>()
     }
+
+    @Test
+    fun gmailApi_resolvesToKtorImplementation() {
+        assertIs<KtorGmailApi>(app.koin.get<GmailApi>())
+    }
+
+    // CestoDatabase isn't resolved here: its driver needs an Android Context / a real file.
+    // :database tests the schema with an in-memory driver on both platforms.
 }

@@ -18,6 +18,9 @@ kotlin {
             // Swift implements GmailAuthorizer, so it must see the type under a clean name.
             export(project(":gmail-auth"))
         }
+        // SQLDelight's native driver uses the system SQLite. Needed by the test binary; the static
+        // framework leaves linking to the iOS app (OTHER_LDFLAGS in iosApp/Configuration/Config.xcconfig).
+        iosTarget.binaries.all { linkerOpts("-lsqlite3") }
     }
     
     android {
@@ -48,6 +51,7 @@ kotlin {
             implementation(project(":systemdesign"))
             implementation(project(":feature:onboarding"))
             implementation(project(":feature:receipts"))
+            implementation(project(":database"))
             // api: androidApp and iosApp implement GmailAuthorizer and pass it to initKoin().
             api(project(":gmail-auth"))
             implementation(libs.navigation.compose)

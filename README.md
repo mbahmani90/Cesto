@@ -9,9 +9,9 @@ Gmail and lets you ask questions about them in plain language:
 > "How much sugar did I buy last month?"
 > "Did I buy anything with lactose?"
 
-> **Status: early development.** Done so far: the modular KMP architecture, the light/dark theme and
-> onboarding with the Gmail permission on Android and iOS. The receipt search, the local database and
-> the chat are next (see [Roadmap](#roadmap)).
+> **Status: early development.** Done so far: the modular KMP architecture, the light/dark theme,
+> onboarding with the Gmail permission on Android and iOS, the Gmail REST client and the local database.
+> The receipt sync, the receipt list and the chat are next (see [Roadmap](#roadmap)).
 
 ## How it will work
 
@@ -42,10 +42,11 @@ module; everything else only knows what it needs.
 | [`iosApp`](iosApp) | iOS entry point (SwiftUI) and `GoogleGmailAuthorizer` (GoogleSignIn, Swift Package) |
 | [`:app`](app/src) | Composition root: `App()` with `CestoTheme` and the `NavHost`, `initKoin()` with all Koin modules; builds the iOS framework `Shared` |
 | [`:feature:onboarding`](feature/onboarding/src) | First screen: what Cesto reads and never does, **Connect Gmail**, **Try demo** |
-| [`:feature:receipts`](feature/receipts/src) | Receipt list (placeholder for now) |
+| [`:feature:receipts`](feature/receipts/src) | Gmail REST client (`messages.list`, `messages.get`, `attachments.get`) with Ktor; receipt list (placeholder for now) |
 | [`:gmail-auth`](gmail-auth/src) | `GmailAuthorizer`: the Gmail permission interface the platform apps implement |
 | [`:systemdesign`](systemdesign/src) | `CestoTheme`: light and dark colour schemes, components used by 2+ features |
 | [`:core`](core/src) | Non-UI shared code: the Ktor `HttpClient` (OkHttp / Darwin engine) and its Koin module |
+| [`:database`](database/src) | Local SQLite database (SQLDelight): receipts found in Gmail and the Gmail messages already checked; receipts fills it, chat will query it |
 
 ### Rules
 
@@ -61,12 +62,13 @@ module; everything else only knows what it needs.
 ### Gmail permission
 
 Gmail access is an **OAuth scope**, not an OS permission: Google's SDK shows the consent dialog and
-returns an access token, which Ktor will send with each Gmail REST call.
+returns an access token, which Ktor sends with each Gmail REST call.
 
 ```
 Connect Gmail ─► GmailAuthorizer (androidApp: AuthorizationClient · iosApp: GoogleSignIn)
                      └─► Google's account picker + consent ─► access token (stays on the phone)
 App start     ─► same call without UI: already granted? ─► skip onboarding
+Gmail request ─► same call without UI ─► "Authorization: Bearer <token>" (never asks the user)
 ```
 
 ## Tech stack
@@ -77,8 +79,9 @@ App start     ─► same call without UI: already granted? ─► skip onboardi
 | DI | Koin 4.2 (`koin-compose-viewmodel`) |
 | Network | Ktor 3.6 (OkHttp on Android, Darwin on iOS), kotlinx.serialization |
 | Gmail permission | Google Identity `AuthorizationClient` (play-services-auth 22) · GoogleSignIn-iOS 10 |
-| Tests | kotlin.test, kotlinx-coroutines-test, Ktor `MockEngine`; shared tests run on Android and iOS |
-| Planned | SQLDelight, kotlinx-datetime, PDF text extraction (PdfBox-Android / PDFKit), AWS LLM proxy |
+| Database | SQLDelight 2.4 (Android driver, iOS native driver with the system SQLite) |
+| Tests | kotlin.test, kotlinx-coroutines-test, Ktor `MockEngine`, in-memory SQLite; shared tests run on Android and iOS |
+| Planned | kotlinx-datetime, PDF text extraction (PdfBox-Android / PDFKit), AWS LLM proxy |
 
 Kotlin 2.4 · Android minSdk 24, targetSdk 37 · iOS 18.2+
 
@@ -115,13 +118,14 @@ Without these the app still builds and runs; "Connect Gmail" then shows an error
 ### Test
 
 ```bash
-./gradlew :gmail-auth:testAndroidHostTest :feature:onboarding:testAndroidHostTest :core:testAndroidHostTest :app:testAndroidHostTest
-./gradlew :gmail-auth:iosSimulatorArm64Test :feature:onboarding:iosSimulatorArm64Test :core:iosSimulatorArm64Test :app:iosSimulatorArm64Test
+./gradlew testAndroidHostTest
+./gradlew iosSimulatorArm64Test
 ```
 
 The same `commonTest` tests run on the JVM and on the iOS simulator: the Gmail access wrapper, the
-onboarding repository and ViewModel, the HTTP client, and the Koin graph (`AppModulesTest`, because Koin
-only reports missing bindings at runtime).
+onboarding repository and ViewModel, the Gmail REST client (`MockEngine`) and message parsing, the
+database schema and queries (in-memory SQLite), the HTTP client, and the Koin graph (`AppModulesTest`,
+because Koin only reports missing bindings at runtime).
 
 ## Design decisions
 
@@ -134,6 +138,9 @@ only reports missing bindings at runtime).
 | Platform implementations in the apps | GoogleSignIn is a Swift Package only practical from Swift; `AuthorizationClient` needs an Activity for the consent screen |
 | Feature modules from the start | Onboarding, receipts and chat are separate features; the compiler enforces the dependency rules |
 | Koin + Ktor | KMP-ready DI and HTTP; the engine is injected so tests use `MockEngine` |
+| `:database` as a shared module | Receipts fill the database and the chat's SQL tools will query it; features can't depend on each other |
+| Receipts keyed by Gmail `messageId + partId` | Gmail returns a different `attachmentId` on every request, so it can't identify a PDF; it's fetched fresh for each download |
+| No Android backup (`allowBackup=false`, data extraction rules) | Receipt data never leaves the phone, not even to Google's backup or a new device; a new install syncs from Gmail again |
 
 ## Roadmap
 

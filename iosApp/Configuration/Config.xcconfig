@@ -6,6 +6,10 @@ PRODUCT_BUNDLE_IDENTIFIER=com.majidbahmani.cesto.Cesto$(TEAM_ID)
 CURRENT_PROJECT_VERSION=1
 MARKETING_VERSION=1.0
 
+// The Kotlin framework is static, so the app links what it needs: SQLDelight's native driver
+// uses the system SQLite.
+OTHER_LDFLAGS = $(inherited) -lsqlite3
+
 // Google OAuth iOS client (GOOGLE_IOS_CLIENT_ID, GOOGLE_IOS_REVERSED_CLIENT_ID), gitignored.
 // Copy Secrets.xcconfig.example to Secrets.xcconfig and fill it in; the app builds without it.
 #include? "Secrets.xcconfig"
