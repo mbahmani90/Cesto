@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -34,6 +35,7 @@ import com.majidbahmani.cesto.feature.receipts.presentation.viewmodel.ReceiptsUi
 import com.majidbahmani.cesto.feature.receipts.presentation.viewmodel.ReceiptsUiState.SyncProblem
 import com.majidbahmani.cesto.feature.receipts.presentation.viewmodel.ReceiptsViewModel
 import com.majidbahmani.cesto.feature.receipts.resources.Res
+import com.majidbahmani.cesto.feature.receipts.resources.receipts_count
 import com.majidbahmani.cesto.feature.receipts.resources.receipts_demo
 import com.majidbahmani.cesto.feature.receipts.resources.receipts_empty
 import com.majidbahmani.cesto.feature.receipts.resources.receipts_error_failed
@@ -66,11 +68,20 @@ internal fun ReceiptsScreen(
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) {
-            Text(
-                text = stringResource(Res.string.receipts_title),
-                style = MaterialTheme.typography.headlineMedium,
+            Column(
                 modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp),
-            )
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                ScreenTitle()
+                // Hidden until the database has answered, so "0 receipts" never flashes.
+                if (!uiState.isLoading) {
+                    Text(
+                        text = pluralStringResource(Res.plurals.receipts_count, uiState.receipts.size, uiState.receipts.size),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
             uiState.syncProblem?.let { SyncProblemBanner(it, onRetry = onRefresh) }
 
             PullToRefreshBox(
@@ -88,6 +99,17 @@ internal fun ReceiptsScreen(
             }
         }
     }
+}
+
+/** Neutral top area (Material 3), brand green only in the title, like "Cesto" on onboarding. */
+@Composable
+private fun ScreenTitle() {
+    Text(
+        text = stringResource(Res.string.receipts_title),
+        style = MaterialTheme.typography.headlineMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+    )
 }
 
 @Composable
@@ -188,7 +210,7 @@ internal fun DemoReceiptsScreen(modifier: Modifier = Modifier) {
             modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(text = stringResource(Res.string.receipts_title), style = MaterialTheme.typography.headlineMedium)
+            ScreenTitle()
             Text(
                 text = stringResource(Res.string.receipts_demo),
                 style = MaterialTheme.typography.bodyLarge,
