@@ -2,6 +2,8 @@ package com.majidbahmani.cesto.feature.receipts.data.repository
 
 import com.majidbahmani.cesto.database.CestoDatabase
 import com.majidbahmani.cesto.feature.receipts.data.local.ReceiptLocalDataSource
+import com.majidbahmani.cesto.feature.receipts.data.parser.ContinenteReceiptParser
+import com.majidbahmani.cesto.feature.receipts.data.parser.PDFBOX_RECEIPT
 import com.majidbahmani.cesto.feature.receipts.data.remote.ContinenteReceipts
 import com.majidbahmani.cesto.feature.receipts.data.remote.GmailNotAuthorizedException
 import com.majidbahmani.cesto.feature.receipts.domain.model.ReceiptStatus
@@ -9,6 +11,7 @@ import com.majidbahmani.cesto.feature.receipts.domain.model.SyncFailure
 import com.majidbahmani.cesto.feature.receipts.domain.model.SyncResult
 import com.majidbahmani.cesto.feature.receipts.fake.FakeGmailApi
 import com.majidbahmani.cesto.feature.receipts.fake.FakeGmailApi.Mail
+import com.majidbahmani.cesto.feature.receipts.fake.FakePdfTextExtractor
 import com.majidbahmani.cesto.feature.receipts.fake.FakeReceiptFileStore
 import com.majidbahmani.cesto.feature.receipts.fake.createTestDriver
 import com.majidbahmani.cesto.gmailauth.GmailAuthError
@@ -28,6 +31,7 @@ class ReceiptRepositoryImplTest {
     private val database = CestoDatabase(driver)
     private var gmail = FakeGmailApi(pageSize = 2)
     private val files = FakeReceiptFileStore()
+    private val extractor = FakePdfTextExtractor()
 
     @AfterTest
     fun tearDown() = driver.close()
@@ -36,6 +40,8 @@ class ReceiptRepositoryImplTest {
         gmail = gmail,
         local = ReceiptLocalDataSource(database, StandardTestDispatcher(testScheduler), currentTimeMillis = { NOW }),
         files = files,
+        textExtractor = extractor,
+        parser = ContinenteReceiptParser(),
         currentTimeMillis = { NOW },
         maxParallelEmails = maxParallelEmails,
     )
@@ -54,7 +60,7 @@ class ReceiptRepositoryImplTest {
 
         assertEquals(SyncResult.Success(newReceipts = 3, downloaded = 3), result)
         assertEquals(listOf("m1", "m2", "m3"), gmail.fetchedMessages.sorted()) // each email read once
-        assertTrue(rows().all { it.status == "DOWNLOADED" && it.pdf_path == "receipts/receipt-${it.id}.pdf" })
+        assertTrue(rows().all { it.status == "TEXT_EXTRACTED" && it.pdf_path == "receipts/receipt-${it.id}.pdf" })
         assertEquals(setOf("%PDF-3", "%PDF-2a", "%PDF-2b"), files.files.values.map { it.decodeToString() }.toSet())
     }
 
@@ -148,7 +154,7 @@ class ReceiptRepositoryImplTest {
         gmail.fetchedMessages.clear()
         assertEquals(SyncResult.Success(newReceipts = 0, downloaded = 2), repository.sync(lookBackMonths = 3))
         assertEquals(listOf("m1"), gmail.fetchedMessages) // read again only for fresh attachment ids
-        assertTrue(rows().all { it.status == "DOWNLOADED" })
+        assertTrue(rows().all { it.status == "TEXT_EXTRACTED" })
     }
 
     @Test
@@ -179,8 +185,66 @@ class ReceiptRepositoryImplTest {
         val receipts = repository.observeReceipts().first()
 
         assertEquals(listOf(2_000L, 1_000L), receipts.map { it.receivedAtMillis })
-        assertEquals(listOf(ReceiptStatus.DOWNLOADED, ReceiptStatus.FAILED), receipts.map { it.status })
+        assertEquals(listOf(ReceiptStatus.TEXT_EXTRACTED, ReceiptStatus.FAILED), receipts.map { it.status })
         assertEquals("Fatura_m2-1.pdf", receipts.first().fileName)
+    }
+
+    @Test
+    fun downloadedPdf_isReadAndParsed_inTheSameSync() = runTest {
+        gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = mapOf("1" to pdf(PDFBOX_RECEIPT)))
+
+        repository().sync(lookBackMonths = 3)
+
+        val row = rows().single()
+        assertEquals("TEXT_EXTRACTED", row.status)
+        assertEquals(PDFBOX_RECEIPT, row.text)
+        assertEquals(188, row.total_cents)
+        assertEquals(1_791_231_720_000, row.purchased_at)
+        assertEquals("FS ABC123/000001", row.receipt_number)
+        assertEquals("ABCD1234-000001", row.atcud)
+
+        val receipt = repository().observeReceipts().first().single()
+        assertEquals(188, receipt.totalCents)
+        assertEquals(1_791_231_720_000, receipt.purchasedAtMillis)
+    }
+
+    @Test
+    fun receiptsDownloadedBeforeThisVersion_areReadFromTheirFile_withoutGmail() = runTest {
+        // As left by the previous app version: downloaded, file on the phone, no text.
+        database.receiptQueries.insertIfNew("m1", "1", "f.pdf", received_at = 1_000)
+        val id = rows().single().id
+        database.receiptQueries.markDownloaded("receipts/receipt-$id.pdf", id)
+        database.gmailMessageQueries.insert("m1", received_at = 1_000, checked_at = 1_000)
+        files.save("receipt-$id.pdf", PDFBOX_RECEIPT.encodeToByteArray())
+        gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = mapOf("1" to pdf("unused")))
+
+        repository().sync(lookBackMonths = 3)
+
+        assertEquals("TEXT_EXTRACTED", rows().single().status)
+        assertEquals(188, rows().single().total_cents)
+        assertTrue(gmail.fetchedMessages.isEmpty())
+    }
+
+    @Test
+    fun pdfWithoutText_orBroken_isFailed_butKeepsItsFile() = runTest {
+        gmail.mailbox += Mail("m2", receivedAt = 2_000, pdfs = mapOf("1" to pdf("   "))) // scanned: no text layer
+        gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = mapOf("1" to pdf("%BROKEN")))
+
+        val result = repository().sync(lookBackMonths = 3)
+
+        assertEquals(SyncResult.Success(newReceipts = 2, downloaded = 2), result)
+        assertTrue(rows().all { it.status == "FAILED" && it.pdf_path != null })
+    }
+
+    @Test
+    fun textWithoutTheFixedLines_isStillExtracted_withEmptyFields() = runTest {
+        gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = mapOf("1" to pdf("Some other PDF")))
+
+        repository().sync(lookBackMonths = 3)
+
+        val row = rows().single()
+        assertEquals("TEXT_EXTRACTED", row.status)
+        assertEquals(null, row.total_cents)
     }
 
     private companion object {

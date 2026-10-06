@@ -5,9 +5,12 @@ enum class ReceiptStatus {
     FOUND,
     DOWNLOADED,
 
-    /** Text and items extracted (later). */
+    /** Text read on the phone; date and total known. */
+    TEXT_EXTRACTED,
+
+    /** Items extracted (later). */
     READY,
 
-    /** The PDF couldn't be read from the email. */
+    /** The PDF couldn't be downloaded or read; retrying won't help. */
     FAILED,
 }

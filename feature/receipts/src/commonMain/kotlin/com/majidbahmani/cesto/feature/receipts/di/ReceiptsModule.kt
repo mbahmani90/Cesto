@@ -2,6 +2,7 @@ package com.majidbahmani.cesto.feature.receipts.di
 
 import com.majidbahmani.cesto.core.di.IoDispatcher
 import com.majidbahmani.cesto.feature.receipts.data.local.ReceiptLocalDataSource
+import com.majidbahmani.cesto.feature.receipts.data.parser.ContinenteReceiptParser
 import com.majidbahmani.cesto.feature.receipts.data.remote.GmailApi
 import com.majidbahmani.cesto.feature.receipts.data.remote.GmailTokenProvider
 import com.majidbahmani.cesto.feature.receipts.data.remote.KtorGmailApi
@@ -15,12 +16,12 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 import kotlin.time.Clock
 
-/** ReceiptFileStore per platform (Android needs the Koin Android context). */
-internal expect val receiptFileStoreModule: Module
+/** ReceiptFileStore and PdfTextExtractor per platform (Android needs the Koin Android context). */
+internal expect val receiptPlatformModule: Module
 
 /** Needs HttpClient + IO dispatcher (:core), CestoDatabase (:database) and GmailAuthorizer (platform apps). */
 val receiptsModule = module {
-    includes(receiptFileStoreModule)
+    includes(receiptPlatformModule)
 
     single { GmailTokenProvider(authorizer = get(), currentTimeMillis = { Clock.System.now().toEpochMilliseconds() }) }
     single<GmailApi> { KtorGmailApi(client = get(), tokens = get()) }
@@ -31,11 +32,14 @@ val receiptsModule = module {
             currentTimeMillis = { Clock.System.now().toEpochMilliseconds() },
         )
     }
+    single { ContinenteReceiptParser() }
     single<ReceiptRepository> {
         ReceiptRepositoryImpl(
             gmail = get(),
             local = get(),
             files = get(),
+            textExtractor = get(),
+            parser = get(),
             currentTimeMillis = { Clock.System.now().toEpochMilliseconds() },
         )
     }

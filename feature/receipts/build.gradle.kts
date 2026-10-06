@@ -54,6 +54,9 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.ktor.client.mock)
         }
+        androidMain.dependencies {
+            implementation(libs.pdfbox.android)
+        }
         getByName("androidHostTest").dependencies {
             implementation(libs.sqldelight.sqliteDriver)
         }

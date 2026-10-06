@@ -1,4 +1,4 @@
--- One row per receipt PDF found in Gmail. Extracted data (date, total, items) comes later.
+-- One row per receipt PDF found in Gmail. Text and fixed fields are read on the phone; items come later.
 CREATE TABLE receipt (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     gmail_message_id TEXT NOT NULL,
@@ -9,8 +9,17 @@ CREATE TABLE receipt (
     received_at INTEGER NOT NULL,
     -- App-private file, null until downloaded.
     pdf_path TEXT,
-    -- FOUND, DOWNLOADED, READY or FAILED (mapped to an enum in the data layer).
+    -- FOUND, DOWNLOADED, TEXT_EXTRACTED, READY or FAILED (mapped to an enum in the data layer).
     status TEXT NOT NULL,
+    -- From the PDF (migration 1.sqm). Null until extracted, or when a field isn't on the receipt.
+    text TEXT,
+    -- Purchase date and time printed on the receipt, epoch millis.
+    purchased_at INTEGER,
+    -- TOTAL A PAGAR in cents (4,52 € = 452): exact sums later, no floating point.
+    total_cents INTEGER,
+    -- e.g. "FS ABC123/000001".
+    receipt_number TEXT,
+    atcud TEXT,
     UNIQUE (gmail_message_id, gmail_part_id)
 );
 
@@ -36,6 +45,11 @@ SELECT * FROM receipt WHERE status = ? ORDER BY received_at DESC, id DESC;
 
 markDownloaded:
 UPDATE receipt SET pdf_path = ?, status = 'DOWNLOADED' WHERE id = ?;
+
+markTextExtracted:
+UPDATE receipt
+SET text = ?, purchased_at = ?, total_cents = ?, receipt_number = ?, atcud = ?, status = 'TEXT_EXTRACTED'
+WHERE id = ?;
 
 updateStatus:
 UPDATE receipt SET status = ? WHERE id = ?;

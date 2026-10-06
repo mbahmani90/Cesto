@@ -17,6 +17,10 @@ class AndroidReceiptFileStore(
         "$DIRECTORY/$fileName"
     }
 
+    override suspend fun read(relativePath: String): ByteArray = withContext(ioDispatcher) {
+        File(context.filesDir, relativePath).readBytes()
+    }
+
     private companion object {
         const val DIRECTORY = "receipts"
     }

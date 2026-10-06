@@ -1,0 +1,7 @@
+-- Version 1 → 2: text and fixed fields read from the receipt PDF.
+-- Existing receipts keep their rows and files; the next sync extracts their text.
+ALTER TABLE receipt ADD COLUMN text TEXT;
+ALTER TABLE receipt ADD COLUMN purchased_at INTEGER;
+ALTER TABLE receipt ADD COLUMN total_cents INTEGER;
+ALTER TABLE receipt ADD COLUMN receipt_number TEXT;
+ALTER TABLE receipt ADD COLUMN atcud TEXT;

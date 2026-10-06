@@ -11,18 +11,28 @@ Gmail and lets you ask questions about them in plain language:
 
 > **Status: early development.** Done so far: the modular KMP architecture, the light/dark theme,
 > onboarding with the Gmail permission on Android and iOS, and the receipt sync: Cartão Continente
-> receipt PDFs from Gmail into the local database and app-private files, shown in a list. Reading the
-> PDFs, extraction and the chat are next (see [Roadmap](#roadmap)).
+> receipt PDFs from Gmail into the local database and app-private files, their text read on the phone
+> (date and total shown in the list). LLM extraction of the items and the chat are next (see [Roadmap](#roadmap)).
 
 ## How it will work
 
 1. **Connect Gmail.** Google's own dialog asks for read-only access (`gmail.readonly`). ✅
 2. **Find receipts.** Search Cartão Continente emails (`noreply@cartaocontinente.pt`) from the last
    3 months, up to 4 emails in parallel, and download the receipt PDFs. ✅
-3. **Extract once.** PDF → text → an LLM turns it into structured items, stored in a local database.
+3. **Extract once.** PDF → text on the phone (date, total, receipt number, ATCUD) ✅ → an LLM turns the text
+   into structured items, stored in the local database.
 4. **Ask.** The LLM answers by calling a few *tools* (for example `sumSpending`, `sumNutrient`); the app
    runs them as SQL on the phone and only sends the small results back. Numbers come from SQL, not from
    the LLM's arithmetic.
+
+### The agent loop (planned)
+
+![Agent loop: how a question is answered](art/agent-loop.svg)
+
+It's a loop, not one call: the LLM picks a tool, the app runs it on the phone and sends back only the small
+result, and the LLM decides the next step, until it answers with text instead of a tool call (at most 5
+rounds). The receipt text is used once, to fill the `product` and `receipt_item` tables; questions only
+work on those tables.
 
 ### Privacy first
 
@@ -73,6 +83,16 @@ App start     ─► same call without UI: already granted? ─► skip onboardi
 Gmail request ─► same call without UI ─► "Authorization: Bearer <token>" (never asks the user)
 ```
 
+### Receipt pipeline: PDF → text
+
+![Receipt text pipeline](art/receipt-text-pipeline.svg)
+
+The sync stays the single entry point (`SyncReceiptsUseCase`). `ReceiptRepositoryImpl` coordinates five
+steps per receipt: download the PDF from Gmail, save the file, extract its text on the phone (PdfBox-Android
+/ PDFKit), parse the fixed fields of a Continente receipt (date, total, receipt number, ATCUD), and save
+them. Yellow boxes were added with this step; items and products come later with LLM extraction.
+Receipts downloaded by an earlier app version are read from their saved file, without asking Gmail again.
+
 ## Tech stack
 
 | Area | Library |
@@ -81,9 +101,11 @@ Gmail request ─► same call without UI ─► "Authorization: Bearer <token>"
 | DI | Koin 4.2 (`koin-compose-viewmodel`) |
 | Network | Ktor 3.6 (OkHttp on Android, Darwin on iOS), kotlinx.serialization |
 | Gmail permission | Google Identity `AuthorizationClient` (play-services-auth 22) · GoogleSignIn-iOS 10 |
-| Database | SQLDelight 2.4 (Android driver, iOS native driver with the system SQLite) |
+| Database | SQLDelight 2.4 (Android driver, iOS native driver with the system SQLite), migrations in `.sqm` files |
+| PDF text | PdfBox-Android 2.0.27 · PDFKit (iOS, called from Kotlin/Native) |
+| Dates | kotlinx-datetime 0.8 |
 | Tests | kotlin.test, kotlinx-coroutines-test, Ktor `MockEngine`, in-memory SQLite; shared tests run on Android and iOS |
-| Planned | kotlinx-datetime, PDF text extraction (PdfBox-Android / PDFKit), AWS LLM proxy |
+| Planned | AWS LLM proxy, Open Food Facts |
 
 Kotlin 2.4 · Android minSdk 24, targetSdk 37 · iOS 18.2+
 
@@ -143,6 +165,8 @@ because Koin only reports missing bindings at runtime).
 | `:database` as a shared module | Receipts fill the database and the chat's SQL tools will query it; features can't depend on each other |
 | Receipts keyed by Gmail `messageId + partId` | Gmail returns a different `attachmentId` on every request, so it can't identify a PDF; it's fetched fresh for each download |
 | Sync: parallel, each email on its own | Up to 4 emails at once (a slow PDF doesn't block the others); each email is read once and its PDFs downloaded right away. An email is marked checked in the same transaction as its receipts; anything that failed is retried by the next sync, and only a failed search fails the whole sync |
+| PDF → text on the phone, fixed fields without an LLM | The PDFs have a text layer; date, total, receipt number and ATCUD are on fixed lines, so they're read exactly and for free. Only the items (their order differs between PdfBox and PDFKit) need the LLM |
+| Money in cents, receipt times in Lisbon time | Exact sums without floating point; the receipt's printed time is Portuguese local time wherever the phone is |
 | Look-back period in the domain | "3 months" is a product rule (`SyncReceiptsUseCase`); the data layer turns it into Gmail syntax (`newer_than:3m`) |
 | The list reads only the database | The sync writes, the screen observes (single source of truth); saved receipts stay visible offline or when Gmail fails |
 | Relative PDF paths | iOS changes the app container's absolute path between installs and updates; PDFs are also excluded from iCloud backup |
@@ -150,7 +174,8 @@ because Koin only reports missing bindings at runtime).
 
 ## Roadmap
 
-- **v1: end to end.** ~~Gmail search + PDF download + receipt list~~ ✅ · PDF viewer · PDF → text → LLM extraction → SQLDelight ·
+- **v1: end to end.** ~~Gmail search + PDF download + receipt list~~ ✅ · ~~PDF → text (date, total)~~ ✅ · PDF viewer ·
+  LLM extraction of the items ·
   Open Food Facts (sugar, ingredients, category) · chat with tool calling and an agent loop · AWS LLM
   proxy (API Gateway + Lambda + Secrets Manager) · demo mode with sample receipts
 - **v2: RAG.** Embeddings + `semanticSearch` tool ("lactose" finds *IOG GREGO NAT*), nutrition guidelines

@@ -46,6 +46,7 @@ import com.majidbahmani.cesto.feature.receipts.resources.receipts_status_downloa
 import com.majidbahmani.cesto.feature.receipts.resources.receipts_status_failed
 import com.majidbahmani.cesto.feature.receipts.resources.receipts_status_found
 import com.majidbahmani.cesto.feature.receipts.resources.receipts_status_ready
+import com.majidbahmani.cesto.feature.receipts.resources.receipts_status_text_extracted
 import com.majidbahmani.cesto.feature.receipts.resources.receipts_syncing
 import com.majidbahmani.cesto.feature.receipts.resources.receipts_title
 import com.majidbahmani.cesto.systemdesign.theme.CestoTheme
@@ -145,7 +146,12 @@ private fun ReceiptRow(receipt: ReceiptItemUi) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            StatusChip(receipt.status)
+            val total = receipt.totalText
+            if (total != null) {
+                Text(text = total, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            } else {
+                StatusChip(receipt.status)
+            }
         }
     }
 }
@@ -156,6 +162,7 @@ private fun StatusChip(status: ReceiptStatus) {
     val (text, container, content) = when (status) {
         ReceiptStatus.FOUND -> Triple(stringResource(Res.string.receipts_status_found), colors.surfaceVariant, colors.onSurfaceVariant)
         ReceiptStatus.DOWNLOADED -> Triple(stringResource(Res.string.receipts_status_downloaded), colors.secondaryContainer, colors.onSecondaryContainer)
+        ReceiptStatus.TEXT_EXTRACTED -> Triple(stringResource(Res.string.receipts_status_text_extracted), colors.secondaryContainer, colors.onSecondaryContainer)
         ReceiptStatus.READY -> Triple(stringResource(Res.string.receipts_status_ready), colors.primary, colors.onPrimary)
         ReceiptStatus.FAILED -> Triple(stringResource(Res.string.receipts_status_failed), colors.errorContainer, colors.onErrorContainer)
     }
@@ -221,7 +228,8 @@ internal fun DemoReceiptsScreen(modifier: Modifier = Modifier) {
 }
 
 private val previewReceipts = listOf(
-    ReceiptItemUi(3, "05/10/2026 21:22", "Fatura_Cartao_Continente_20261005_2122.pdf", ReceiptStatus.DOWNLOADED),
+    ReceiptItemUi(4, "05/10/2026 21:22", "Fatura_Cartao_Continente_20261005_2122.pdf", ReceiptStatus.TEXT_EXTRACTED, "4,52 €"),
+    ReceiptItemUi(3, "03/10/2026 19:29", "Fatura_Cartao_Continente_20261003_1929.pdf", ReceiptStatus.DOWNLOADED),
     ReceiptItemUi(2, "28/09/2026 18:04", "Fatura_Cartao_Continente_20260928_1804.pdf", ReceiptStatus.FOUND),
     ReceiptItemUi(1, "21/09/2026 10:47", "Fatura_Cartao_Continente_20260921_1047.pdf", ReceiptStatus.FAILED),
 )

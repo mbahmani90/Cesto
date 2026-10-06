@@ -9,4 +9,6 @@ class FakeReceiptFileStore : ReceiptFileStore {
         files[fileName] = bytes
         return "receipts/$fileName"
     }
+
+    override suspend fun read(relativePath: String): ByteArray = files.getValue(relativePath.removePrefix("receipts/"))
 }
