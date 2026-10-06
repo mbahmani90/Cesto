@@ -2,9 +2,12 @@ package com.majidbahmani.cesto.di
 
 import com.majidbahmani.cesto.feature.onboarding.presentation.viewmodel.OnboardingViewModel
 import com.majidbahmani.cesto.feature.receipts.data.remote.GmailApi
+import com.majidbahmani.cesto.feature.receipts.data.local.ReceiptFileStore
 import com.majidbahmani.cesto.feature.receipts.data.remote.KtorGmailApi
+import com.majidbahmani.cesto.feature.receipts.presentation.viewmodel.ReceiptsViewModel
 import com.majidbahmani.cesto.gmailauth.GmailAuthError
 import com.majidbahmani.cesto.gmailauth.GmailAuthorizer
+import app.cash.sqldelight.db.SqlDriver
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import kotlinx.coroutines.Dispatchers
@@ -13,6 +16,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.koin.dsl.koinApplication
+import org.koin.dsl.module
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -28,8 +32,20 @@ class AppModulesTest {
             onFailure(GmailAuthError.NOT_GRANTED)
     }
 
-    // Local KoinApplication: tests never touch the global Koin instance.
-    private val app = koinApplication { modules(listOf(platformServicesModule(FakeGmailAuthorizer)) + appModules) }
+    private object UnusedFileStore : ReceiptFileStore {
+        override suspend fun save(fileName: String, bytes: ByteArray) = error("not used")
+    }
+
+    /** Only what needs a real device is replaced (Android Context, files on disk); the rest is the real graph. */
+    private val platformReplacements = module {
+        single<SqlDriver> { createTestDriver() }
+        single<ReceiptFileStore> { UnusedFileStore }
+    }
+
+    // Local KoinApplication: tests never touch the global Koin instance. Later modules override earlier ones.
+    private val app = koinApplication {
+        modules(listOf(platformServicesModule(FakeGmailAuthorizer)) + appModules + platformReplacements)
+    }
 
     // ViewModels launch in viewModelScope (Dispatchers.Main), which doesn't exist in JVM tests.
     @BeforeTest
@@ -66,6 +82,8 @@ class AppModulesTest {
         assertIs<KtorGmailApi>(app.koin.get<GmailApi>())
     }
 
-    // CestoDatabase isn't resolved here: its driver needs an Android Context / a real file.
-    // :database tests the schema with an in-memory driver on both platforms.
+    @Test
+    fun receiptsViewModel_resolvesWithTheRealRepositoryAndDatabase() {
+        app.koin.get<ReceiptsViewModel>()
+    }
 }

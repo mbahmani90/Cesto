@@ -1,5 +1,19 @@
 <resources>
     <string name="receipts_title">Receipts</string>
-    <string name="receipts_connected">Gmail is connected. Your Continente receipts will appear here.</string>
     <string name="receipts_demo">Demo mode. Sample receipts will appear here.</string>
+    <string name="receipts_empty">No Continente receipts from the last 3 months yet. Pull down to check Gmail again.</string>
+    <string name="receipts_syncing">Looking for receipts in Gmail…</string>
+
+    <string name="receipts_status_found">Waiting</string>
+    <string name="receipts_status_downloaded">Downloaded</string>
+    <string name="receipts_status_ready">Ready</string>
+    <string name="receipts_status_failed">Failed</string>
+
+    <string name="receipts_error_not_authorized">Cesto can no longer read Gmail. Connect Gmail again to get new receipts.</string>
+    <string name="receipts_error_failed">Couldn’t check Gmail for new receipts. Your saved receipts are still here.</string>
+    <plurals name="receipts_error_incomplete">
+        <item quantity="one">%1$d receipt couldn’t be loaded this time. It will be tried again.</item>
+        <item quantity="other">%1$d receipts couldn’t be loaded this time. They will be tried again.</item>
+    </plurals>
+    <string name="receipts_retry">Retry</string>
 </resources>

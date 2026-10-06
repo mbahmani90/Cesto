@@ -1,5 +1,6 @@
 package com.majidbahmani.cesto.di
 
+import com.majidbahmani.cesto.core.di.dispatchersModule
 import com.majidbahmani.cesto.core.di.networkModule
 import com.majidbahmani.cesto.database.di.databaseModule
 import com.majidbahmani.cesto.feature.onboarding.di.onboardingModule
@@ -12,7 +13,7 @@ import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 
 /** Every Koin module of the app. Only :app knows all of them; features add theirs here. */
-internal val appModules = listOf(networkModule, databaseModule, onboardingModule, receiptsModule)
+internal val appModules = listOf(networkModule, dispatchersModule, databaseModule, onboardingModule, receiptsModule)
 
 /** Bindings created by the platform apps before Koin starts (they need the platform SDKs). */
 internal fun platformServicesModule(gmailAuthorizer: GmailAuthorizer): Module = module {

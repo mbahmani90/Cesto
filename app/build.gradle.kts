@@ -69,6 +69,12 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
         }
+        getByName("androidHostTest").dependencies {
+            implementation(libs.sqldelight.sqliteDriver)
+        }
+        iosTest.dependencies {
+            implementation(libs.sqldelight.nativeDriver)
+        }
     }
 }
 
