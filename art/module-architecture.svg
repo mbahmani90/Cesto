@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="760" viewBox="0 0 960 760" role="img" aria-labelledby="title desc">
+  <title id="title">Cesto module architecture</title>
+  <desc id="desc">Platform shells androidApp and iosApp depend on the :app composition root, which depends on the feature modules onboarding and receipts and on the shared modules gmail-auth, systemdesign and core. Both platform apps implement the GmailAuthorizer interface from gmail-auth.</desc>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; fill: #1c1c1c; }
+    .bg { fill: #ffffff; }
+    .h { font-size: 16px; font-weight: 700; }
+    .t { font-size: 12.5px; fill: #4a4a4a; }
+    .label { font-size: 12px; font-weight: 600; fill: #4a4a4a; letter-spacing: 0.06em; }
+    .note { font-size: 11.5px; fill: #4a4a4a; font-style: italic; }
+    .shell { fill: #f2f2f2; stroke: #cacaca; }
+    .app { fill: #1e7a4f; stroke: #1e7a4f; }
+    .app-text .h, .app-text .t { fill: #ffffff; }
+    .feature { fill: #cdefd9; stroke: #8fcfa9; }
+    .shared { fill: #ffffff; stroke: #9a9a9a; }
+    .dep { fill: none; stroke: #7a7a7a; stroke-width: 1.6; }
+    .impl { fill: none; stroke: #1e7a4f; stroke-width: 1.6; stroke-dasharray: 6 5; }
+    .tip { fill: #7a7a7a; }
+    .tip-impl { fill: #1e7a4f; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path class="tip" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+    <marker id="arrow-impl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path class="tip-impl" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="960" height="760"/>
+
+  <!-- Dependency arrows (drawn first, boxes on top) -->
+  <!-- shells -> :app -->
+  <path class="dep" d="M240,130 L360,198" marker-end="url(#arrow)"/>
+  <path class="dep" d="M720,130 L600,198" marker-end="url(#arrow)"/>
+  <!-- :app -> features -->
+  <path class="dep" d="M320,290 L300,358" marker-end="url(#arrow)"/>
+  <path class="dep" d="M640,290 L660,358" marker-end="url(#arrow)"/>
+  <!-- :app -> :systemdesign (between the features) -->
+  <path class="dep" d="M480,290 L480,528" marker-end="url(#arrow)"/>
+  <!-- :app -> :gmail-auth (api, left side) -->
+  <path class="dep" d="M230,245 L110,245 L110,528" marker-end="url(#arrow)"/>
+  <text class="t" x="118" y="238">api</text>
+  <!-- :app -> :core (right side) -->
+  <path class="dep" d="M730,245 L850,245 L850,528" marker-end="url(#arrow)"/>
+  <!-- features -> shared -->
+  <path class="dep" d="M240,450 L215,528" marker-end="url(#arrow)"/>
+  <path class="dep" d="M370,450 L420,528" marker-end="url(#arrow)"/>
+  <path class="dep" d="M590,450 L540,528" marker-end="url(#arrow)"/>
+  <!-- platform apps implement GmailAuthorizer -->
+  <path class="impl" d="M80,85 L40,85 L40,575 L58,575" marker-end="url(#arrow-impl)"/>
+  <path class="impl" d="M880,85 L930,85 L930,660 L195,660 L195,622" marker-end="url(#arrow-impl)"/>
+
+  <!-- Platform shells -->
+  <rect class="shell" x="80" y="40" width="320" height="90" rx="12"/>
+  <text class="h" x="100" y="68">androidApp · Kotlin</text>
+  <text class="t" x="100" y="92">CestoApp: initKoin(AndroidGmailAuthorizer)</text>
+  <text class="t" x="100" y="112">MainActivity · play-services-auth</text>
+
+  <rect class="shell" x="560" y="40" width="320" height="90" rx="12"/>
+  <text class="h" x="580" y="68">iosApp · Swift</text>
+  <text class="t" x="580" y="92">iOSApp: initKoinIos(GoogleGmailAuthorizer)</text>
+  <text class="t" x="580" y="112">GoogleSignIn (Swift Package)</text>
+
+  <!-- Composition root -->
+  <rect class="app" x="230" y="200" width="500" height="90" rx="12"/>
+  <g class="app-text">
+    <text class="h" x="250" y="228">:app</text>
+    <text class="t" x="250" y="252">App(): CestoTheme + NavHost · initKoin(all Koin modules)</text>
+    <text class="t" x="250" y="272">Builds the iOS framework "Shared" (exports :gmail-auth)</text>
+  </g>
+
+  <!-- Features -->
+  <rect class="feature" x="150" y="360" width="300" height="90" rx="12"/>
+  <text class="h" x="170" y="388">:feature:onboarding</text>
+  <text class="t" x="170" y="412">data · domain · presentation · route · DI</text>
+  <text class="t" x="170" y="432">Connect Gmail · Try demo</text>
+
+  <rect class="feature" x="510" y="360" width="300" height="90" rx="12"/>
+  <text class="h" x="530" y="388">:feature:receipts</text>
+  <text class="t" x="530" y="412">Receipt list (placeholder for now)</text>
+  <text class="t" x="530" y="432">route · connected or demo mode</text>
+
+  <!-- Shared modules -->
+  <rect class="shared" x="60" y="530" width="270" height="90" rx="12"/>
+  <text class="h" x="80" y="558">:gmail-auth</text>
+  <text class="t" x="80" y="582">GmailAuthorizer interface</text>
+  <text class="t" x="80" y="602">requestAccess() · no project deps</text>
+
+  <rect class="shared" x="345" y="530" width="270" height="90" rx="12"/>
+  <text class="h" x="365" y="558">:systemdesign</text>
+  <text class="t" x="365" y="582">CestoTheme (light + dark)</text>
+  <text class="t" x="365" y="602">Compose Material 3</text>
+
+  <rect class="shared" x="630" y="530" width="270" height="90" rx="12"/>
+  <text class="h" x="650" y="558">:core</text>
+  <text class="t" x="650" y="582">Ktor HttpClient · Koin network module</text>
+  <text class="t" x="650" y="602">OkHttp (Android) / Darwin (iOS)</text>
+
+  <!-- Layer labels -->
+  <rect class="bg" x="407" y="14" width="146" height="20"/>
+  <text class="label" x="480" y="28" text-anchor="middle">PLATFORM SHELLS</text>
+  <rect class="bg" x="403" y="176" width="154" height="20"/>
+  <text class="label" x="480" y="190" text-anchor="middle">COMPOSITION ROOT</text>
+  <rect class="bg" x="437" y="336" width="87" height="20"/>
+  <text class="label" x="480" y="350" text-anchor="middle">FEATURES</text>
+  <rect class="bg" x="411" y="632" width="138" height="20"/>
+  <text class="label" x="480" y="646" text-anchor="middle">SHARED MODULES</text>
+
+  <!-- Legend -->
+  <path class="dep" d="M60,712 L120,712" marker-end="url(#arrow)"/>
+  <text class="t" x="132" y="716">Gradle dependency</text>
+  <path class="impl" d="M290,712 L350,712" marker-end="url(#arrow-impl)"/>
+  <text class="t" x="362" y="716">implements GmailAuthorizer, passed to initKoin()</text>
+  <text class="note" x="60" y="742">Features never depend on each other; :app wires them with navigation lambdas. Shared modules never depend upward.</text>
+</svg>
