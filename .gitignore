@@ -32,6 +32,7 @@ xcuserdata
 *.keystore
 
 # Google / Firebase config (contain project ids and keys)
+iosApp/Configuration/Secrets.xcconfig
 google-services.json
 GoogleService-Info.plist
 

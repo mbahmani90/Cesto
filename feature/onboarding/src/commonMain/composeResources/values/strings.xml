@@ -1,0 +1,20 @@
+<resources>
+    <string name="onboarding_title">Cesto</string>
+    <string name="onboarding_tagline">Ask your grocery receipts anything.</string>
+    <string name="onboarding_description">Cesto finds your Continente receipts in Gmail, so you can ask things like “How much did I spend in August?”</string>
+
+    <string name="onboarding_reads_title">What Cesto reads</string>
+    <string name="onboarding_reads_receipts">Only Continente emails with a receipt</string>
+    <string name="onboarding_reads_local">Receipts are stored on this phone only</string>
+
+    <string name="onboarding_never_title">What Cesto never does</string>
+    <string name="onboarding_never_change">Send, delete or change your emails</string>
+    <string name="onboarding_never_upload">Upload your emails to a server</string>
+
+    <string name="onboarding_connect">Connect Gmail</string>
+    <string name="onboarding_connect_hint">Google will ask you to allow read-only access to Gmail.</string>
+    <string name="onboarding_try_demo">Try demo with sample receipts</string>
+
+    <string name="onboarding_error_permission_denied">Cesto needs the Gmail permission to find your receipts. Tap Connect Gmail and keep the Gmail box ticked.</string>
+    <string name="onboarding_error_failed">Couldn’t connect to Google. Check your internet connection and try again.</string>
+</resources>

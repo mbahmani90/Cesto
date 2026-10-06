@@ -1,50 +1,31 @@
 package com.majidbahmani.cesto
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import org.jetbrains.compose.resources.painterResource
+import androidx.compose.runtime.Composable
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.rememberNavController
+import com.majidbahmani.cesto.feature.onboarding.navigation.OnboardingRoute
+import com.majidbahmani.cesto.feature.onboarding.navigation.onboardingScreen
+import com.majidbahmani.cesto.feature.receipts.navigation.ReceiptsRoute
+import com.majidbahmani.cesto.feature.receipts.navigation.receiptsScreen
 import com.majidbahmani.cesto.systemdesign.theme.CestoTheme
 
-import cesto.app.generated.resources.Res
-import cesto.app.generated.resources.compose_multiplatform
-
+/** Composition root: the theme and the navigation graph; features only know their own routes. */
 @Composable
-@Preview
 fun App() {
     CestoTheme {
-        var showContent by remember { mutableStateOf(false) }
-        Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
-            }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
-                }
-            }
+        val navController = rememberNavController()
+        NavHost(navController = navController, startDestination = OnboardingRoute) {
+            onboardingScreen(
+                // Connected: onboarding is done, so back from receipts closes the app.
+                onConnected = {
+                    navController.navigate(ReceiptsRoute(demo = false)) {
+                        popUpTo<OnboardingRoute> { inclusive = true }
+                    }
+                },
+                // Demo: back returns to onboarding to connect Gmail for real.
+                onTryDemo = { navController.navigate(ReceiptsRoute(demo = true)) },
+            )
+            receiptsScreen()
         }
     }
 }
