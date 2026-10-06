@@ -158,5 +158,5 @@
   <text class="t" x="400" y="712">new in this step</text>
   <circle class="step" cx="520" cy="707" r="8"/><text class="step-text" x="520" y="711" text-anchor="middle">1</text>
   <text class="t" x="534" y="712">order of the steps for each receipt</text>
-  <text class="note" x="30" y="740">Later syncs also pick up receipts still DOWNLOADED (steps 3–5 only). Items and products come with LLM extraction.</text>
+  <text class="note" x="30" y="740">Later syncs also pick up receipts still DOWNLOADED (steps 3–5 only). Then the item section goes to Gemini for items and products.</text>
 </svg>

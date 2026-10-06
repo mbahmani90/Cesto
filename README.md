@@ -10,29 +10,50 @@ Gmail and lets you ask questions about them in plain language:
 > "Did I buy anything with lactose?"
 
 > **Status: early development.** Done so far: the modular KMP architecture, the light/dark theme,
-> onboarding with the Gmail permission on Android and iOS, and the receipt sync: Cartão Continente
-> receipt PDFs from Gmail into the local database and app-private files, their text read on the phone
-> (date and total shown in the list). LLM extraction of the items and the chat are next (see [Roadmap](#roadmap)).
+> onboarding with the Gmail permission on Android and iOS, the receipt sync (Cartão Continente receipt PDFs
+> from Gmail, their text read on the phone), the Gemini key in Settings, LLM extraction of the items, and the
+> **Ask** tab with an agent loop over SQL tools. RAG (search by meaning) is next (see [Roadmap](#roadmap)).
 
 ## How it will work
 
 1. **Connect Gmail.** Google's own dialog asks for read-only access (`gmail.readonly`). ✅
 2. **Find receipts.** Search Cartão Continente emails (`noreply@cartaocontinente.pt`) from the last
    3 months, up to 4 emails in parallel, and download the receipt PDFs. ✅
-3. **Extract once.** PDF → text on the phone (date, total, receipt number, ATCUD) ✅ → an LLM turns the text
-   into structured items, stored in the local database.
-4. **Ask.** The LLM answers by calling a few *tools* (for example `sumSpending`, `sumNutrient`); the app
-   runs them as SQL on the phone and only sends the small results back. Numbers come from SQL, not from
-   the LLM's arithmetic.
+3. **Extract once.** PDF → text on the phone (date, total, receipt number, ATCUD) ✅ → Gemini turns only the
+   item section into structured lines (products, quantities, prices), stored in the local database. ✅
+4. **Ask.** Gemini answers by calling a few *tools* (`findProducts`, `sumQuantity`, `sumSpending`,
+   `topProducts`, `listReceipts`); the app runs them as SQL on the phone and only sends the small results
+   back. Numbers come from SQL, not from the LLM's arithmetic. ✅
 
-### The agent loop (planned)
+### The agent loop
 
 ![Agent loop: how a question is answered](art/agent-loop.svg)
 
-It's a loop, not one call: the LLM picks a tool, the app runs it on the phone and sends back only the small
-result, and the LLM decides the next step, until it answers with text instead of a tool call (at most 5
+It's a loop, not one call (`AskQuestionUseCase`): the LLM picks a tool, the app runs it on the phone and sends back only the small
+result, and the LLM decides the next step, until it answers with text instead of a tool call (at most 30
 rounds). The receipt text is used once, to fill the `product` and `receipt_item` tables; questions only
-work on those tables.
+work on those tables. Each answer shows how many receipts it came from; errors (no key, quota, Gemini
+busy, offline) are shown in the conversation with a way to fix them.
+
+### RAG: finding products by meaning (planned)
+
+![RAG: product vectors from Gemini embeddings, search on the phone, SQL for the numbers](art/rag-flow.svg)
+
+Receipts never say "dairy" or "snacks", so keyword search can't find those products. **Semantic search** can:
+
+1. **Making vectors.** After each sync, only **new** products (name + category, never prices or receipt
+   data) go to Gemini's embedding API, up to 100 per request. Each product's vector is stored on the phone in
+   a separate `product_embedding` table (one row per product and model). Products that already have a
+   vector are skipped, so vectors never change when new receipts arrive.
+2. **Searching.** For a question like "How much did I spend on dairy?", the agent calls
+   `semanticSearch("dairy")`. The phone embeds the search words, compares them with every product vector
+   (cosine similarity in plain Kotlin, no vector database), and returns the closest products' ids and names.
+3. **Deciding and counting.** The result goes back to the agent, which keeps only the products that really
+   match and calls the SQL tools (`sumSpending`, `sumQuantity`) to count them.
+
+Vectors find **which** products, SQL counts **how much**, and Gemini only reads names and totals, never
+vectors. Gemini embeddings run in Google's cloud with your own key; an on-device model (EmbeddingGemma)
+can replace them later behind the same `EmbeddingProvider` interface.
 
 ### Privacy first
 
@@ -55,14 +76,14 @@ module; everything else only knows what it needs.
 | [`iosApp`](iosApp) | iOS entry point (SwiftUI) and `GoogleGmailAuthorizer` (GoogleSignIn, Swift Package) |
 | [`:app`](app/src) | Composition root: `App()` with `CestoTheme`, the bottom bar (**Ask · Receipts · Settings**) and the `NavHost`, `initKoin()` with all Koin modules; builds the iOS framework `Shared` |
 | [`:feature:onboarding`](feature/onboarding/src) | First screen: what Cesto reads and never does, **Connect Gmail**, **Try demo** |
-| [`:feature:receipts`](feature/receipts/src) | Receipt sync (Gmail REST with Ktor → database → PDF files) and the receipt list with pull to refresh |
-| [`:feature:chat`](feature/chat/src) | **Ask** tab: questions about your receipts, answered by Gemini with tools (placeholder for now) |
-| [`:feature:settings`](feature/settings/src) | **Settings** tab: your own Gemini key in two steps, later Gmail and privacy (placeholder for now) |
+| [`:feature:receipts`](feature/receipts/src) | Receipt sync (Gmail REST with Ktor → database → PDF files), item extraction with Gemini, and the receipt list with pull to refresh |
+| [`:feature:chat`](feature/chat/src) | **Ask** tab: the agent loop (`AskQuestionUseCase`), Gemini function calling, the SQL tools and the chat screen |
+| [`:feature:settings`](feature/settings/src) | **Settings** tab: your own Gemini key in two steps, tested before saving, and an **Enable billing** link; later Gmail and privacy |
 | [`:gmail-auth`](gmail-auth/src) | `GmailAuthorizer`: the Gmail permission interface the platform apps implement |
 | [`:systemdesign`](systemdesign/src) | `CestoTheme`: light and dark colour schemes; components used by 2+ features (`CestoScreenTitle`) |
 | [`:core`](core/src) | Non-UI shared code: the Ktor `HttpClient` (OkHttp / Darwin engine) and its Koin module |
-| [`:llm`](llm/src) | Gemini with the user's own key: encrypted key storage (Android Keystore) and the Gemini REST client |
-| [`:database`](database/src) | Local SQLite database (SQLDelight): receipts found in Gmail and the Gmail messages already checked; receipts fills it, chat will query it |
+| [`:llm`](llm/src) | Gemini with the user's own key: encrypted key storage (Android Keystore) and the Gemini REST client (key check, structured output, function calling) |
+| [`:database`](database/src) | Local SQLite database (SQLDelight): receipts, products, receipt lines and the Gmail messages already checked; receipts fills it, the chat's read-only queries (`Insights.sq`) use it |
 
 ### Rules
 
@@ -91,15 +112,21 @@ App start     ─► same call without UI: already granted? ─► skip onboardi
 Gmail request ─► same call without UI ─► "Authorization: Bearer <token>" (never asks the user)
 ```
 
-### Receipt pipeline: PDF → text
+### Receipt pipeline: PDF → text → items
 
 ![Receipt text pipeline](art/receipt-text-pipeline.svg)
 
 The sync stays the single entry point (`SyncReceiptsUseCase`). `ReceiptRepositoryImpl` coordinates five
 steps per receipt: download the PDF from Gmail, save the file, extract its text on the phone (PdfBox-Android
 / PDFKit), parse the fixed fields of a Continente receipt (date, total, receipt number, ATCUD), and save
-them. Yellow boxes were added with this step; items and products come later with LLM extraction.
+them. Yellow boxes were added with this step.
 Receipts downloaded by an earlier app version are read from their saved file, without asking Gmail again.
+
+Then **item extraction**: only the item section (from the `DESCRICAO` header to `SUBTOTAL` / `TOTAL A PAGAR`,
+long numbers masked) goes to Gemini with a fixed JSON format. Each line becomes a `receipt_item`, and each
+unique printed name a `product` (full Portuguese name, category, units per pack). The lines' sum is checked
+against the receipt's subtotal. Gemini overloaded → retry, then a lighter model; key or quota errors pause
+extraction until the next sync.
 
 ## Tech stack
 
@@ -113,8 +140,8 @@ Receipts downloaded by an earlier app version are read from their saved file, wi
 | PDF text | PdfBox-Android 2.0.27 · PDFKit (iOS, called from Kotlin/Native) |
 | Dates | kotlinx-datetime 0.8 |
 | Tests | kotlin.test, kotlinx-coroutines-test, Ktor `MockEngine`, in-memory SQLite; shared tests run on Android and iOS |
-| LLM | Gemini REST API via Ktor, with the user's own key (Android Keystore: AES-GCM) |
-| Planned | Open Food Facts, iOS Keychain for the key |
+| LLM | Gemini REST API via Ktor (structured output, function calling), with the user's own key (Android Keystore: AES-GCM) |
+| Planned | Gemini embeddings (RAG), Open Food Facts, iOS Keychain for the key |
 
 Kotlin 2.4 · Android minSdk 24, targetSdk 37 · iOS 18.2+
 
@@ -157,8 +184,9 @@ Without these the app still builds and runs; "Connect Gmail" then shows an error
 
 The same `commonTest` tests run on the JVM and on the iOS simulator: the Gmail access wrapper, the
 onboarding repository and ViewModel, the Gmail REST client (`MockEngine`) and message parsing, the
-database schema and queries (in-memory SQLite), the HTTP client, and the Koin graph (`AppModulesTest`,
-because Koin only reports missing bindings at runtime).
+database schema, migrations and queries (in-memory SQLite), item extraction, the agent loop (scripted fake
+model), the SQL tools, the Gemini request/response mapping, the ViewModels, the HTTP client, and the Koin
+graph (`AppModulesTest`, because Koin only reports missing bindings at runtime).
 
 ## Design decisions
 
@@ -185,10 +213,9 @@ because Koin only reports missing bindings at runtime).
 ## Roadmap
 
 - **v1: end to end.** ~~Gmail search + PDF download + receipt list~~ ✅ · ~~PDF → text (date, total)~~ ✅ · PDF viewer ·
-  LLM extraction of the items ·
-  ~~Gemini key in Settings~~ ✅ · Open Food Facts (sugar, ingredients, category) · chat with tool calling and an
-  agent loop · demo mode with sample receipts
-- **v2: RAG.** Embeddings + `semanticSearch` tool ("lactose" finds *IOG GREGO NAT*), nutrition guidelines
-- **v3: on device.** ONNX embedding model, evaluation set, optional offline LLM, more stores
+  ~~LLM extraction of the items~~ ✅ · ~~Gemini key in Settings~~ ✅ · ~~chat with tool calling and an agent loop~~ ✅ ·
+  Open Food Facts (sugar, ingredients, category) · demo mode with sample receipts
+- **v2: RAG.** Gemini embeddings + `semanticSearch` tool ("dairy" finds *IOG GREGO NAT*), nutrition guidelines
+- **v3: on device.** On-device embedding model (EmbeddingGemma), evaluation set, optional offline LLM, more stores
 
 Receipts show what you **bought**, not what you ate: the app talks about "sugar in groceries purchased".
