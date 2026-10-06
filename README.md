@@ -8,6 +8,7 @@ This is a Kotlin Multiplatform project targeting Android, iOS.
   It also builds the iOS framework (`Shared`).
   - [commonMain](./app/src/commonMain/kotlin) is for code that’s common for all targets.
   - [androidMain](./app/src/androidMain/kotlin) and [iosMain](./app/src/iosMain/kotlin) are for platform-specific code.
+* [/core](./core/src) is non-UI code shared by features: the Ktor `HttpClient` (OkHttp / Darwin engine) and its Koin module.
 
 ### Running the apps
 
@@ -22,6 +23,7 @@ Use the run button in your IDE's editor gutter, or run tests using Gradle tasks:
 
 - Android tests: `./gradlew :app:testAndroidHostTest`
 - iOS tests: `./gradlew :app:iosSimulatorArm64Test`
+- `:core` tests: `./gradlew :core:testAndroidHostTest :core:iosSimulatorArm64Test`
 
 ---
 
