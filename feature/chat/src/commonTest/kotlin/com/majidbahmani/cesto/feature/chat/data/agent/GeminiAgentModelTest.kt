@@ -87,7 +87,7 @@ class GeminiAgentModelTest {
 
         val body = bodies.single()
         val declarations = body["tools"]!!.jsonArray.single().jsonObject["functionDeclarations"]!!.jsonArray
-        assertEquals(5, declarations.size)
+        assertEquals(6, declarations.size)
         val instruction = body["systemInstruction"]!!.jsonObject["parts"]!!.jsonArray.single().jsonObject["text"]!!.jsonPrimitive.content
         assertTrue(instruction.contains("Today is 2026-10-06"))
         assertTrue(instruction.contains("no receipts yet"))

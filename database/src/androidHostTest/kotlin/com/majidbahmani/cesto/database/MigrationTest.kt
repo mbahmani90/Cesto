@@ -81,7 +81,22 @@ class MigrationTest {
     }
 
     @Test
-    fun schemaVersion_is3() {
-        assertEquals(3, CestoDatabase.Schema.version)
+    fun version1To4_addsProductVectors() {
+        createVersion1()
+
+        CestoDatabase.Schema.migrate(driver, oldVersion = 1, newVersion = CestoDatabase.Schema.version)
+        val database = CestoDatabase(driver)
+        database.productQueries.insertIfNew("BANANA", "Banana", "Frutas e Legumes", 1)
+        val productId = database.productQueries.idByRawName("BANANA").executeAsOne()
+        database.productEmbeddingQueries.upsert(productId, "model@3", "Banana. Categoria: Frutas e Legumes", floatArrayOf(0.6f, 0.8f, 0f).toBlob())
+
+        val row = database.productEmbeddingQueries.vectorsForModel("model@3").executeAsOne()
+        assertEquals("Banana", row.normalized_name)
+        assertEquals(listOf(0.6f, 0.8f, 0f), row.vector.toVector().toList())
+    }
+
+    @Test
+    fun schemaVersion_is4() {
+        assertEquals(4, CestoDatabase.Schema.version)
     }
 }

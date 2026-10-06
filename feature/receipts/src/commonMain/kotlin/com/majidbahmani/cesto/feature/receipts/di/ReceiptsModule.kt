@@ -21,7 +21,7 @@ import kotlin.time.Clock
 /** ReceiptFileStore and PdfTextExtractor per platform (Android needs the Koin Android context). */
 internal expect val receiptPlatformModule: Module
 
-/** Needs HttpClient + IO dispatcher (:core), CestoDatabase (:database), GeminiApi + key (:llm), GmailAuthorizer (platform apps). */
+/** Needs HttpClient + IO dispatcher (:core), CestoDatabase (:database), GeminiApi + key + EmbeddingProvider (:llm), GmailAuthorizer (platform apps). */
 val receiptsModule = module {
     includes(receiptPlatformModule)
 
@@ -44,6 +44,7 @@ val receiptsModule = module {
             textExtractor = get(),
             parser = get(),
             itemExtractor = get(),
+            embeddings = get(),
             geminiKeys = get(),
             currentTimeMillis = { Clock.System.now().toEpochMilliseconds() },
         )

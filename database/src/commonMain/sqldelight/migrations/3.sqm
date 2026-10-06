@@ -1,0 +1,9 @@
+-- Version 3 → 4: product vectors for semantic search ("dairy" finds iogurte, leite, queijo).
+-- Derived data: always recomputable from product, so nothing to migrate; the next sync fills it.
+CREATE TABLE product_embedding (
+    product_id INTEGER NOT NULL REFERENCES product(id) ON DELETE CASCADE,
+    model TEXT NOT NULL,
+    embed_text TEXT NOT NULL,
+    vector BLOB NOT NULL,
+    PRIMARY KEY (product_id, model)
+);

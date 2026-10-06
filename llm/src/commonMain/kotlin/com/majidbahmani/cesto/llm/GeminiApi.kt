@@ -16,7 +16,9 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.float
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
@@ -143,6 +145,44 @@ class GeminiApi(private val client: HttpClient) {
             ?: throw GeminiEmptyResponseException(candidate?.get("finishReason")?.toString())
     }
 
+    /**
+     * One vector per text, in the same order (`batchEmbedContents`). Texts already carry the model's task
+     * prefixes. Same exceptions as [generateJson]; [GeminiEmptyResponseException] if the count doesn't match.
+     */
+    suspend fun embed(
+        key: String,
+        texts: List<String>,
+        model: String = EMBEDDING_MODEL,
+        dimensions: Int = EMBEDDING_DIMENSIONS,
+    ): List<FloatArray> {
+        if (texts.isEmpty()) return emptyList()
+        val body = buildJsonObject {
+            putJsonArray("requests") {
+                texts.forEach { text ->
+                    add(
+                        buildJsonObject {
+                            put("model", "models/$model")
+                            putJsonObject("content") {
+                                putJsonArray("parts") { add(buildJsonObject { put("text", text) }) }
+                            }
+                            put("outputDimensionality", dimensions)
+                        },
+                    )
+                }
+            }
+        }
+        val response: JsonObject = client.post(BASE_URL + "models/$model:batchEmbedContents") {
+            header(API_KEY_HEADER, key)
+            contentType(ContentType.Application.Json)
+            setBody(body)
+        }.body()
+        val vectors = response["embeddings"]?.jsonArray.orEmpty().map { embedding ->
+            embedding.jsonObject["values"]!!.jsonArray.map { it.jsonPrimitive.float }.toFloatArray()
+        }
+        if (vectors.size != texts.size) throw GeminiEmptyResponseException("${vectors.size} embeddings for ${texts.size} texts")
+        return vectors
+    }
+
     companion object {
         /** Current Flash model (checked in Google's model list, Oct 2026); one place to switch. */
         const val EXTRACTION_MODEL = "gemini-3.8-flash"
@@ -152,6 +192,11 @@ class GeminiApi(private val client: HttpClient) {
 
         /** Cheaper, separate capacity: used when the main model is overloaded (503). */
         const val FALLBACK_MODEL = "gemini-3.5-flash-lite"
+        /** Text embeddings for semantic search (checked in Google's docs, Oct 2026: gemini-embedding-001 is legacy). */
+        const val EMBEDDING_MODEL = "gemini-embedding-2"
+
+        /** 768 of the model's 3072 numbers: a recommended size, normalized by the model, ~3 KB per product. */
+        const val EMBEDDING_DIMENSIONS = 768
         const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta/"
         const val API_KEY_HEADER = "x-goog-api-key"
     }

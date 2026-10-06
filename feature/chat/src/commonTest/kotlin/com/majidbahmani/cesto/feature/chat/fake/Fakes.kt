@@ -7,6 +7,8 @@ import com.majidbahmani.cesto.feature.chat.domain.model.ReceiptTools
 import com.majidbahmani.cesto.feature.chat.domain.model.ToolCall
 import com.majidbahmani.cesto.feature.chat.domain.model.ToolResult
 import com.majidbahmani.cesto.llm.GeminiKeyStore
+import com.majidbahmani.cesto.llm.embedding.EmbeddingProvider
+import com.majidbahmani.cesto.llm.embedding.EmbeddingUnavailableException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -46,4 +48,19 @@ class FakeGeminiKeyStore(initial: String? = "AIza-test") : GeminiKeyStore {
     override val key = MutableStateFlow(initial)
     override suspend fun save(key: String) { this.key.value = key }
     override suspend fun clear() { key.value = null }
+}
+
+/** Search words → the vectors given in [queries]; records what was asked. */
+class FakeEmbeddingProvider(private val queries: Map<String, FloatArray> = emptyMap()) : EmbeddingProvider {
+    override val modelId = "fake@2"
+    val asked = mutableListOf<String>()
+    var unavailable: EmbeddingUnavailableException.Reason? = null
+
+    override suspend fun embedDocuments(texts: List<String>): List<FloatArray> = error("not used by the tools")
+
+    override suspend fun embedQuery(text: String): FloatArray {
+        unavailable?.let { throw EmbeddingUnavailableException(it) }
+        asked += text
+        return queries.getValue(text)
+    }
 }

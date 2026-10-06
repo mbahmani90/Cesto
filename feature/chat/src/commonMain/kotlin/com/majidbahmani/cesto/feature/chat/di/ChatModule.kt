@@ -13,9 +13,9 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 import kotlin.time.Clock
 
-/** Needs the IO dispatcher (:core), CestoDatabase (:database), GeminiApi + key store (:llm). */
+/** Needs the IO dispatcher (:core), CestoDatabase (:database), GeminiApi + key store + EmbeddingProvider (:llm). */
 val chatModule = module {
-    single<ReceiptTools> { SqlReceiptTools(database = get(), ioDispatcher = get(IoDispatcher)) }
+    single<ReceiptTools> { SqlReceiptTools(database = get(), ioDispatcher = get(IoDispatcher), embeddings = get()) }
     single {
         ReceiptAgentPrompt(
             database = get(),

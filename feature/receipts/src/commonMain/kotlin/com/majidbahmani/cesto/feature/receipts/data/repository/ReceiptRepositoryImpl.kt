@@ -2,6 +2,7 @@ package com.majidbahmani.cesto.feature.receipts.data.repository
 
 import com.majidbahmani.cesto.core.logging.logWarning
 import com.majidbahmani.cesto.database.Receipt as ReceiptRow
+import com.majidbahmani.cesto.feature.receipts.data.embedding.ProductText
 import com.majidbahmani.cesto.feature.receipts.data.extraction.ExtractionUnavailableException
 import com.majidbahmani.cesto.feature.receipts.data.extraction.ReceiptItemExtractor
 import com.majidbahmani.cesto.feature.receipts.data.local.PdfTextExtractor
@@ -28,6 +29,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import com.majidbahmani.cesto.llm.GeminiKeyStore
+import com.majidbahmani.cesto.llm.embedding.EmbeddingProvider
+import com.majidbahmani.cesto.llm.embedding.EmbeddingUnavailableException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -35,9 +38,10 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 
 /**
- * Gmail → database → files → text → items. For each receipt: download the PDF, save the file, extract its
- * text on the phone, parse the fixed fields, save them (FOUND → DOWNLOADED → TEXT_EXTRACTED); then, with a
- * Gemini key, extract its items (→ READY). Only the receipt's item section is sent to Gemini.
+ * Gmail → database → files → text → items → vectors. For each receipt: download the PDF, save the file,
+ * extract its text on the phone, parse the fixed fields, save them (FOUND → DOWNLOADED → TEXT_EXTRACTED);
+ * then, with a Gemini key, extract its items (→ READY). Only the receipt's item section is sent to Gemini.
+ * Last, new products get a vector for semantic search (only their name and category are sent).
  *
  * - Up to [maxParallelEmails] emails are handled at once; the next starts as soon as one finishes.
  * - Each email is read once: its PDFs are downloaded right away with the attachment ids from that
@@ -53,6 +57,7 @@ class ReceiptRepositoryImpl(
     private val textExtractor: PdfTextExtractor,
     private val parser: ContinenteReceiptParser,
     private val itemExtractor: ReceiptItemExtractor,
+    private val embeddings: EmbeddingProvider,
     private val geminiKeys: GeminiKeyStore,
     private val currentTimeMillis: () -> Long,
     private val maxParallelEmails: Int = 4,
@@ -81,6 +86,7 @@ class ReceiptRepositoryImpl(
             (newEmails + retries + texts).awaitAll().fold(Outcome(), Outcome::plus)
         }
         extractItems(limit) // after the text step, so this sync's new receipts are included
+        embedProducts() // after items, so this sync's new products are included
         SyncResult.Success(outcome.newReceipts, outcome.downloaded, outcome.incomplete)
     } catch (e: CancellationException) {
         throw e
@@ -212,6 +218,29 @@ class ReceiptRepositoryImpl(
         }
     }
 
+    /**
+     * Vectors for semantic search, only for products that have none (or whose text changed): a product bought
+     * every week is embedded once. Batches of [EMBED_BATCH] are saved one by one, so a used-up quota keeps
+     * what's done and the next sync continues. Skipped without a key.
+     */
+    private suspend fun embedProducts() {
+        geminiKeys.key.first() ?: return
+        val model = embeddings.modelId
+        try {
+            local.productsToEmbed(model).chunked(EMBED_BATCH).forEach { batch: List<ProductText> ->
+                val vectors = embeddings.embedDocuments(batch.map { it.text })
+                local.saveEmbeddings(model, batch.zip(vectors))
+            }
+            local.deleteEmbeddingsOfOtherModels(model) // every product has a vector of this model now
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: EmbeddingUnavailableException) {
+            logWarning(TAG, "sync: product vectors paused (${e.reason}); retried next sync", e.cause)
+        } catch (e: Exception) {
+            logWarning(TAG, "sync: product vectors failed; retried next sync", e)
+        }
+    }
+
     /** Runs one unit of work; a failure only affects this unit (cancellation and lost access still stop the sync). */
     private inline fun isolated(messageId: String, onFailure: Outcome, block: () -> Outcome): Outcome = try {
         block()
@@ -226,6 +255,9 @@ class ReceiptRepositoryImpl(
 
     private companion object {
         const val MAX_PAGES = 10
+
+        /** Products per embedding request (Gemini's batch limit). */
+        const val EMBED_BATCH = 100
         const val TAG = "ReceiptSync"
     }
 }
