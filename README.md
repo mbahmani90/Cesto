@@ -38,8 +38,9 @@ work on those tables.
 
 - Receipts, PDFs and the database stay **on the phone**. There is no app account and no backend login.
 - The Gmail token never leaves the device; the app never sends, deletes or changes emails.
-- The LLM never sees the database or raw emails, only small tool results. Its API key lives on a backend
-  proxy, never in the app.
+- The LLM never sees the database or raw emails, only small tool results.
+- Gemini runs with **your own API key** (Settings): it's stored encrypted on the phone (Android Keystore) and
+  only sent to Google. No key ships in the app, and there's no backend in between.
 
 ## Architecture
 
@@ -60,6 +61,7 @@ module; everything else only knows what it needs.
 | [`:gmail-auth`](gmail-auth/src) | `GmailAuthorizer`: the Gmail permission interface the platform apps implement |
 | [`:systemdesign`](systemdesign/src) | `CestoTheme`: light and dark colour schemes; components used by 2+ features (`CestoScreenTitle`) |
 | [`:core`](core/src) | Non-UI shared code: the Ktor `HttpClient` (OkHttp / Darwin engine) and its Koin module |
+| [`:llm`](llm/src) | Gemini with the user's own key: encrypted key storage (Android Keystore) and the Gemini REST client |
 | [`:database`](database/src) | Local SQLite database (SQLDelight): receipts found in Gmail and the Gmail messages already checked; receipts fills it, chat will query it |
 
 ### Rules
@@ -111,7 +113,8 @@ Receipts downloaded by an earlier app version are read from their saved file, wi
 | PDF text | PdfBox-Android 2.0.27 · PDFKit (iOS, called from Kotlin/Native) |
 | Dates | kotlinx-datetime 0.8 |
 | Tests | kotlin.test, kotlinx-coroutines-test, Ktor `MockEngine`, in-memory SQLite; shared tests run on Android and iOS |
-| Planned | AWS LLM proxy, Open Food Facts |
+| LLM | Gemini REST API via Ktor, with the user's own key (Android Keystore: AES-GCM) |
+| Planned | Open Food Facts, iOS Keychain for the key |
 
 Kotlin 2.4 · Android minSdk 24, targetSdk 37 · iOS 18.2+
 
@@ -162,7 +165,8 @@ because Koin only reports missing bindings at runtime).
 | Decision | Why |
 |---|---|
 | Data on the device, not in the cloud | Receipts contain the NIF and shopping habits; Gmail is the source of truth, so nothing needs a backup; keeping restricted-scope Gmail data off servers avoids Google's security assessment |
-| No Cognito / app accounts | The Gmail token would end up on AWS, and Cognito can't refresh Google tokens. One Google dialog is all the user sees |
+| No Cognito / app accounts | The Gmail token would end up on a server, and Cognito can't refresh Google tokens. One Google dialog is all the user sees |
+| Your own Gemini key, no backend | A key inside the app could be extracted and used on someone else's bill; with each user's own key (set up in two steps in Settings, tested before saving) no proxy or server is needed, and costs stay on the user's account. Billing is recommended: on the free tier Google may use prompts to improve its products |
 | Extract once, then query with tools | Sending all receipt text per question is expensive and LLMs make arithmetic mistakes; SQL computes exact sums and scales to 10,000+ items |
 | `:gmail-auth` as its own leaf module | Onboarding and receipts both need it, and features don't depend on each other |
 | Platform implementations in the apps | GoogleSignIn is a Swift Package only practical from Swift; `AuthorizationClient` needs an Activity for the consent screen |
@@ -182,8 +186,8 @@ because Koin only reports missing bindings at runtime).
 
 - **v1: end to end.** ~~Gmail search + PDF download + receipt list~~ ✅ · ~~PDF → text (date, total)~~ ✅ · PDF viewer ·
   LLM extraction of the items ·
-  Open Food Facts (sugar, ingredients, category) · chat with tool calling and an agent loop · AWS LLM
-  proxy (API Gateway + Lambda + Secrets Manager) · demo mode with sample receipts
+  ~~Gemini key in Settings~~ ✅ · Open Food Facts (sugar, ingredients, category) · chat with tool calling and an
+  agent loop · demo mode with sample receipts
 - **v2: RAG.** Embeddings + `semanticSearch` tool ("lactose" finds *IOG GREGO NAT*), nutrition guidelines
 - **v3: on device.** ONNX embedding model, evaluation set, optional offline LLM, more stores
 

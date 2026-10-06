@@ -56,6 +56,7 @@ kotlin {
             implementation(project(":feature:receipts"))
             implementation(project(":feature:chat"))
             implementation(project(":feature:settings"))
+            implementation(project(":llm"))
             implementation(libs.compose.components.resources)
             implementation(project(":database"))
             // api: androidApp and iosApp implement GmailAuthorizer and pass it to initKoin().

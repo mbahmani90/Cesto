@@ -5,7 +5,9 @@ import com.majidbahmani.cesto.core.di.networkModule
 import com.majidbahmani.cesto.database.di.databaseModule
 import com.majidbahmani.cesto.feature.onboarding.di.onboardingModule
 import com.majidbahmani.cesto.feature.receipts.di.receiptsModule
+import com.majidbahmani.cesto.feature.settings.di.settingsModule
 import com.majidbahmani.cesto.gmailauth.GmailAuthorizer
+import com.majidbahmani.cesto.llm.di.llmModule
 import org.koin.core.KoinApplication
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
@@ -13,7 +15,15 @@ import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 
 /** Every Koin module of the app. Only :app knows all of them; features add theirs here. */
-internal val appModules = listOf(networkModule, dispatchersModule, databaseModule, onboardingModule, receiptsModule)
+internal val appModules = listOf(
+    networkModule,
+    dispatchersModule,
+    databaseModule,
+    llmModule,
+    onboardingModule,
+    receiptsModule,
+    settingsModule,
+)
 
 /** Bindings created by the platform apps before Koin starts (they need the platform SDKs). */
 internal fun platformServicesModule(gmailAuthorizer: GmailAuthorizer): Module = module {

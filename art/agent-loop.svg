@@ -59,7 +59,7 @@
 
   <rect class="llm" x="790" y="30" width="170" height="56" rx="10"/>
   <text class="h" x="875" y="55" text-anchor="middle">LLM</text>
-  <text class="sub" x="875" y="73" text-anchor="middle">cloud, via AWS proxy</text>
+  <text class="sub" x="875" y="73" text-anchor="middle">Gemini, your own key</text>
 
   <!-- Lifelines -->
   <line class="lifeline" x1="120" y1="86" x2="120" y2="720"/>
