@@ -1,0 +1,5 @@
+<resources>
+    <string name="receipts_title">Receipts</string>
+    <string name="receipts_connected">Gmail is connected. Your Continente receipts will appear here.</string>
+    <string name="receipts_demo">Demo mode. Sample receipts will appear here.</string>
+</resources>
