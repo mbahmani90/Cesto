@@ -45,6 +45,9 @@ kotlin {
             implementation(libs.compose.uiTooling)
         }
         commonMain.dependencies {
+            implementation(project(":core"))
+            // api: initKoin() exposes Koin types (KoinAppDeclaration) to androidApp.
+            api(libs.koin.core)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
