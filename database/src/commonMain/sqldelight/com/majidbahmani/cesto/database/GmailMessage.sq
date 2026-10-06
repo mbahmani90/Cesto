@@ -1,0 +1,20 @@
+-- Gmail messages already looked at (receipt or not), so a re-sync only fetches new ones.
+CREATE TABLE gmail_message (
+    id TEXT NOT NULL PRIMARY KEY,
+    -- Gmail internalDate, epoch millis.
+    received_at INTEGER NOT NULL,
+    checked_at INTEGER NOT NULL
+);
+
+insert:
+INSERT OR IGNORE INTO gmail_message(id, received_at, checked_at)
+VALUES (?, ?, ?);
+
+isChecked:
+SELECT EXISTS(SELECT 1 FROM gmail_message WHERE id = ?);
+
+latestReceivedAt:
+SELECT MAX(received_at) FROM gmail_message;
+
+deleteAll:
+DELETE FROM gmail_message;
