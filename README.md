@@ -52,11 +52,13 @@ module; everything else only knows what it needs.
 |---|---|
 | [`androidApp`](androidApp) | Android entry point: `CestoApp` starts Koin, `MainActivity`, and `AndroidGmailAuthorizer` (Google Identity `AuthorizationClient`) |
 | [`iosApp`](iosApp) | iOS entry point (SwiftUI) and `GoogleGmailAuthorizer` (GoogleSignIn, Swift Package) |
-| [`:app`](app/src) | Composition root: `App()` with `CestoTheme` and the `NavHost`, `initKoin()` with all Koin modules; builds the iOS framework `Shared` |
+| [`:app`](app/src) | Composition root: `App()` with `CestoTheme`, the bottom bar (**Ask · Receipts · Settings**) and the `NavHost`, `initKoin()` with all Koin modules; builds the iOS framework `Shared` |
 | [`:feature:onboarding`](feature/onboarding/src) | First screen: what Cesto reads and never does, **Connect Gmail**, **Try demo** |
 | [`:feature:receipts`](feature/receipts/src) | Receipt sync (Gmail REST with Ktor → database → PDF files) and the receipt list with pull to refresh |
+| [`:feature:chat`](feature/chat/src) | **Ask** tab: questions about your receipts, answered by Gemini with tools (placeholder for now) |
+| [`:feature:settings`](feature/settings/src) | **Settings** tab: your own Gemini key in two steps, later Gmail and privacy (placeholder for now) |
 | [`:gmail-auth`](gmail-auth/src) | `GmailAuthorizer`: the Gmail permission interface the platform apps implement |
-| [`:systemdesign`](systemdesign/src) | `CestoTheme`: light and dark colour schemes, components used by 2+ features |
+| [`:systemdesign`](systemdesign/src) | `CestoTheme`: light and dark colour schemes; components used by 2+ features (`CestoScreenTitle`) |
 | [`:core`](core/src) | Non-UI shared code: the Ktor `HttpClient` (OkHttp / Darwin engine) and its Koin module |
 | [`:database`](database/src) | Local SQLite database (SQLDelight): receipts found in Gmail and the Gmail messages already checked; receipts fills it, chat will query it |
 
@@ -64,6 +66,10 @@ module; everything else only knows what it needs.
 
 - **Features never depend on each other.** `:app` connects them with navigation lambdas
   (`onConnected`, `onTryDemo`); each feature owns its route.
+- **Floating pill bottom bar in `:app`** (`TopLevelDestination`): tabs draw behind it and get a `contentPadding`
+  so their last item ends above it. The selected tab is derived from the back stack, each
+  tab keeps its state when you switch, and back goes to **Ask**, then closes the app. Onboarding and demo
+  mode are outside the bar.
 - **Shared modules never depend upward**, and `:systemdesign` and `:core` don't know each other.
 - **Inside a feature:** `presentation → domain ← data`. The domain is plain Kotlin; the data layer
   implements the domain's repository interfaces; ViewModels only call use cases.

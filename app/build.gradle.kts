@@ -31,6 +31,9 @@ kotlin {
        compilerOptions {
            jvmTarget = JvmTarget.JVM_11
        }
+       androidResources {
+           enable = true
+       }
        withHostTest {
            isIncludeAndroidResources = true
        }
@@ -51,6 +54,9 @@ kotlin {
             implementation(project(":systemdesign"))
             implementation(project(":feature:onboarding"))
             implementation(project(":feature:receipts"))
+            implementation(project(":feature:chat"))
+            implementation(project(":feature:settings"))
+            implementation(libs.compose.components.resources)
             implementation(project(":database"))
             // api: androidApp and iosApp implement GmailAuthorizer and pass it to initKoin().
             api(project(":gmail-auth"))
@@ -80,4 +86,8 @@ kotlin {
 
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
+}
+
+compose.resources {
+    packageOfResClass = "com.majidbahmani.cesto.resources"
 }
