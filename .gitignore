@@ -1,0 +1,45 @@
+# Gradle
+.gradle
+**/build/
+!src/**/build/
+.externalNativeBuild
+.cxx
+
+# Kotlin
+.kotlin
+
+# IDE
+.idea
+*.iml
+
+# Local config (SDK path, API keys)
+local.properties
+
+# Android
+captures
+
+# Xcode
+xcuserdata
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+
+# Signing keys
+*.jks
+*.keystore
+
+# Google / Firebase config (contain project ids and keys)
+google-services.json
+GoogleService-Info.plist
+
+# OS
+.DS_Store
+
+# Tooling
+node_modules/
+
+# Personal notes / playbook
+/doc/
