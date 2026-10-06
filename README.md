@@ -220,3 +220,7 @@ graph (`AppModulesTest`, because Koin only reports missing bindings at runtime).
 - **v3: on device.** On-device embedding model (EmbeddingGemma), evaluation set, optional offline LLM, more stores
 
 Receipts show what you **bought**, not what you ate: the app talks about "sugar in groceries purchased".
+
+## License
+
+[MIT](LICENSE) © 2026 Majid Bahmani
