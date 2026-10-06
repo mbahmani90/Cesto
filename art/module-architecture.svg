@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="980" height="800" viewBox="0 0 980 800" role="img" aria-labelledby="title desc">
   <title id="title">Cesto module architecture</title>
-  <desc id="desc">Platform shells androidApp and iosApp depend on the :app composition root, which depends on the feature modules onboarding and receipts and on the shared modules gmail-auth, systemdesign, core and database. Both platform apps implement the GmailAuthorizer interface from gmail-auth.</desc>
+  <desc id="desc">Platform shells androidApp and iosApp depend on the :app composition root, which depends on the feature modules onboarding, chat, receipts and settings and on the shared modules gmail-auth, systemdesign, core and database. Both platform apps implement the GmailAuthorizer interface from gmail-auth.</desc>
   <style>
     text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; fill: #1c1c1c; }
     .bg { fill: #ffffff; }
@@ -33,74 +33,81 @@
   <!-- shells -> :app -->
   <path class="dep" d="M250,130 L370,198" marker-end="url(#arrow)"/>
   <path class="dep" d="M730,130 L610,198" marker-end="url(#arrow)"/>
-  <!-- :app -> features -->
-  <path class="dep" d="M310,290 L270,368" marker-end="url(#arrow)"/>
-  <path class="dep" d="M670,290 L710,368" marker-end="url(#arrow)"/>
-  <!-- :app -> :gmail-auth (api + exported to Swift, left side) -->
-  <path class="dep" d="M240,245 L60,245 L60,568" marker-end="url(#arrow)"/>
-  <text class="t" x="68" y="238">api</text>
-  <!-- :feature:onboarding -> :gmail-auth, :systemdesign -->
-  <path class="dep" d="M180,460 L150,568" marker-end="url(#arrow)"/>
-  <path class="dep" d="M340,460 L350,568" marker-end="url(#arrow)"/>
-  <!-- :feature:receipts -> :gmail-auth, :systemdesign, :core, :database -->
-  <path class="dep" d="M620,460 L225,568" marker-end="url(#arrow)"/>
-  <path class="dep" d="M600,460 L430,568" marker-end="url(#arrow)"/>
-  <path class="dep" d="M700,460 L600,568" marker-end="url(#arrow)"/>
-  <path class="dep" d="M790,460 L800,568" marker-end="url(#arrow)"/>
+  <!-- :app -> features (bottom bar: Ask, Receipts, Settings; onboarding before it) -->
+  <path class="dep" d="M300,290 L150,368" marker-end="url(#arrow)"/>
+  <path class="dep" d="M410,290 L370,368" marker-end="url(#arrow)"/>
+  <path class="dep" d="M570,290 L600,368" marker-end="url(#arrow)"/>
+  <path class="dep" d="M680,290 L820,368" marker-end="url(#arrow)"/>
+  <!-- :feature:onboarding -> :gmail-auth -->
+  <path class="dep" d="M200,460 L320,568" marker-end="url(#arrow)"/>
+  <!-- :feature:receipts -> :gmail-auth, :core, :database -->
+  <path class="dep" d="M540,460 L430,568" marker-end="url(#arrow)"/>
+  <path class="dep" d="M600,460 L590,568" marker-end="url(#arrow)"/>
+  <path class="dep" d="M660,460 L780,568" marker-end="url(#arrow)"/>
   <!-- platform apps implement GmailAuthorizer -->
-  <path class="impl" d="M90,85 L14,85 L14,615 L28,615" marker-end="url(#arrow-impl)"/>
-  <path class="impl" d="M890,85 L964,85 L964,712 L135,712 L135,662" marker-end="url(#arrow-impl)"/>
+  <path class="impl" d="M90,85 L14,85 L14,712 L300,712 L300,662" marker-end="url(#arrow-impl)"/>
+  <path class="impl" d="M890,85 L964,85 L964,712 L420,712 L420,662" marker-end="url(#arrow-impl)"/>
 
   <!-- Platform shells -->
   <rect class="shell" x="90" y="40" width="320" height="90" rx="12"/>
-  <text class="h" x="108" y="68">androidApp · Kotlin</text>
-  <text class="t" x="108" y="92">CestoApp: initKoin(AndroidGmailAuthorizer)</text>
-  <text class="t" x="108" y="112">MainActivity · play-services-auth</text>
+  <text class="h" x="106" y="68">androidApp · Kotlin</text>
+  <text class="t" x="106" y="92">CestoApp: initKoin(AndroidGmailAuthorizer)</text>
+  <text class="t" x="106" y="112">MainActivity · play-services-auth</text>
 
   <rect class="shell" x="570" y="40" width="320" height="90" rx="12"/>
-  <text class="h" x="588" y="68">iosApp · Swift</text>
-  <text class="t" x="588" y="92">iOSApp: initKoinIos(GoogleGmailAuthorizer)</text>
-  <text class="t" x="588" y="112">GoogleSignIn (Swift Package)</text>
+  <text class="h" x="586" y="68">iosApp · Swift</text>
+  <text class="t" x="586" y="92">iOSApp: initKoinIos(GoogleGmailAuthorizer)</text>
+  <text class="t" x="586" y="112">GoogleSignIn (Swift Package)</text>
 
   <!-- Composition root -->
   <rect class="app" x="240" y="200" width="500" height="90" rx="12"/>
   <g class="app-text">
     <text class="h" x="260" y="228">:app</text>
-    <text class="t" x="260" y="252">App(): CestoTheme + NavHost · initKoin(all Koin modules)</text>
-    <text class="t" x="260" y="272">Builds the iOS framework "Shared" (exports :gmail-auth)</text>
+    <text class="t" x="260" y="252">App(): CestoTheme + bottom bar (Ask · Receipts · Settings)</text>
+    <text class="t" x="260" y="272">NavHost · initKoin · iOS framework "Shared" (exports :gmail-auth)</text>
   </g>
 
   <!-- Features -->
-  <rect class="feature" x="110" y="370" width="290" height="90" rx="12"/>
-  <text class="h" x="128" y="398">:feature:onboarding</text>
-  <text class="t" x="128" y="422">data · domain · presentation</text>
-  <text class="t" x="128" y="442">Connect Gmail · Try demo</text>
+  <rect class="feature" x="40" y="370" width="200" height="90" rx="12"/>
+  <text class="h" x="56" y="398">:feature:onboarding</text>
+  <text class="t" x="56" y="422">Connect Gmail</text>
+  <text class="t" x="56" y="442">Try demo</text>
 
-  <rect class="feature" x="580" y="370" width="290" height="90" rx="12"/>
-  <text class="h" x="598" y="398">:feature:receipts</text>
-  <text class="t" x="598" y="422">Gmail sync → database → PDF files</text>
-  <text class="t" x="598" y="442">Receipt list · pull to refresh</text>
+  <rect class="feature" x="266" y="370" width="200" height="90" rx="12"/>
+  <text class="h" x="282" y="398">:feature:chat</text>
+  <text class="t" x="282" y="422">Ask tab</text>
+  <text class="t" x="282" y="442">placeholder for now</text>
+
+  <rect class="feature" x="492" y="370" width="200" height="90" rx="12"/>
+  <text class="h" x="508" y="398">:feature:receipts</text>
+  <text class="t" x="508" y="422">Gmail sync → PDF → text</text>
+  <text class="t" x="508" y="442">receipt list</text>
+
+  <rect class="feature" x="718" y="370" width="200" height="90" rx="12"/>
+  <text class="h" x="734" y="398">:feature:settings</text>
+  <text class="t" x="734" y="422">Settings tab</text>
+  <text class="t" x="734" y="442">placeholder for now</text>
 
   <!-- Shared modules -->
   <rect class="shared" x="30" y="570" width="210" height="90" rx="12"/>
-  <text class="h" x="48" y="598">:gmail-auth</text>
-  <text class="t" x="48" y="622">GmailAuthorizer interface</text>
-  <text class="t" x="48" y="642">requestAccess() · no deps</text>
+  <text class="h" x="46" y="598">:systemdesign</text>
+  <text class="t" x="46" y="622">CestoTheme (light + dark)</text>
+  <text class="t" x="46" y="642">CestoScreenTitle</text>
 
   <rect class="shared" x="256" y="570" width="210" height="90" rx="12"/>
-  <text class="h" x="274" y="598">:systemdesign</text>
-  <text class="t" x="274" y="622">CestoTheme (light + dark)</text>
-  <text class="t" x="274" y="642">Compose Material 3</text>
+  <text class="h" x="272" y="598">:gmail-auth</text>
+  <text class="t" x="272" y="622">GmailAuthorizer interface</text>
+  <text class="t" x="272" y="642">requestAccess() · no deps</text>
 
   <rect class="shared" x="482" y="570" width="210" height="90" rx="12"/>
-  <text class="h" x="500" y="598">:core</text>
-  <text class="t" x="500" y="622">Ktor HttpClient + Koin</text>
-  <text class="t" x="500" y="642">OkHttp / Darwin engine</text>
+  <text class="h" x="498" y="598">:core</text>
+  <text class="t" x="498" y="622">Ktor HttpClient + Koin</text>
+  <text class="t" x="498" y="642">dispatchers · logWarning</text>
 
   <rect class="shared" x="708" y="570" width="210" height="90" rx="12"/>
-  <text class="h" x="726" y="598">:database</text>
-  <text class="t" x="726" y="622">SQLDelight · cesto.db</text>
-  <text class="t" x="726" y="642">receipt · gmail_message</text>
+  <text class="h" x="724" y="598">:database</text>
+  <text class="t" x="724" y="622">SQLDelight · cesto.db</text>
+  <text class="t" x="724" y="642">receipt · gmail_message</text>
 
   <!-- Layer labels -->
   <rect class="bg" x="417" y="14" width="146" height="20"/>
@@ -117,6 +124,6 @@
   <text class="t" x="102" y="752">Gradle dependency</text>
   <path class="impl" d="M260,748 L320,748" marker-end="url(#arrow-impl)"/>
   <text class="t" x="332" y="752">implements GmailAuthorizer, passed to initKoin()</text>
-  <text class="note" x="30" y="776">:app depends on every module to build the Koin graph; only its edges to the features and :gmail-auth are drawn.</text>
+  <text class="note" x="30" y="776">Not drawn: :app depends on every module (Koin graph); every feature uses :systemdesign.</text>
   <text class="note" x="30" y="794">Features never depend on each other; :app wires them with navigation lambdas. Shared modules never depend upward.</text>
 </svg>

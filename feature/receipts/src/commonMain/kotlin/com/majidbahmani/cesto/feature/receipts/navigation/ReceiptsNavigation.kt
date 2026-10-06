@@ -1,5 +1,6 @@
 package com.majidbahmani.cesto.feature.receipts.navigation
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
@@ -11,8 +12,9 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ReceiptsRoute(val demo: Boolean = false)
 
-fun NavGraphBuilder.receiptsScreen() {
+/** @param contentPadding space covered by :app's floating bottom bar. */
+fun NavGraphBuilder.receiptsScreen(contentPadding: PaddingValues = PaddingValues()) {
     composable<ReceiptsRoute> { entry ->
-        if (entry.toRoute<ReceiptsRoute>().demo) DemoReceiptsScreen() else ReceiptsRouteContent()
+        if (entry.toRoute<ReceiptsRoute>().demo) DemoReceiptsScreen() else ReceiptsRouteContent(contentPadding)
     }
 }

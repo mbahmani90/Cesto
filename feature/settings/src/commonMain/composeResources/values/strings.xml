@@ -1,0 +1,4 @@
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_placeholder">Here you’ll set up your Gemini key in two steps: create a Google Cloud project, then create the key in Google AI Studio.</string>
+</resources>

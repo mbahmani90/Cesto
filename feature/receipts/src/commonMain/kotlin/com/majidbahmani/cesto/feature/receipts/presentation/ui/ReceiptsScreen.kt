@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -27,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.majidbahmani.cesto.feature.receipts.domain.model.ReceiptStatus
@@ -49,15 +52,19 @@ import com.majidbahmani.cesto.feature.receipts.resources.receipts_status_ready
 import com.majidbahmani.cesto.feature.receipts.resources.receipts_status_text_extracted
 import com.majidbahmani.cesto.feature.receipts.resources.receipts_syncing
 import com.majidbahmani.cesto.feature.receipts.resources.receipts_title
+import com.majidbahmani.cesto.systemdesign.component.CestoScreenTitle
 import com.majidbahmani.cesto.systemdesign.theme.CestoTheme
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-internal fun ReceiptsRoute(viewModel: ReceiptsViewModel = koinViewModel()) {
+internal fun ReceiptsRoute(
+    contentPadding: PaddingValues = PaddingValues(),
+    viewModel: ReceiptsViewModel = koinViewModel(),
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    ReceiptsScreen(uiState = uiState, onRefresh = viewModel::onRefresh)
+    ReceiptsScreen(uiState = uiState, onRefresh = viewModel::onRefresh, contentPadding = contentPadding)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,14 +73,18 @@ internal fun ReceiptsScreen(
     uiState: ReceiptsUiState,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Space the floating bottom bar covers; the list scrolls behind it and ends above it. */
+    contentPadding: PaddingValues = PaddingValues(),
 ) {
+    val bottom = contentPadding.calculateBottomPadding()
     Surface(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) {
+        // Bottom inset comes from contentPadding (it already includes the system navigation bar).
+        Column(modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))) {
             Column(
                 modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                ScreenTitle()
+                CestoScreenTitle(stringResource(Res.string.receipts_title))
                 // Hidden until the database has answered, so "0 receipts" never flashes.
                 if (!uiState.isLoading) {
                     Text(
@@ -91,32 +102,21 @@ internal fun ReceiptsScreen(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 when {
-                    uiState.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    uiState.isLoading -> Box(Modifier.fillMaxSize().padding(bottom = bottom), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
-                    uiState.receipts.isEmpty() -> EmptyContent(isSyncing = uiState.isSyncing)
-                    else -> ReceiptList(uiState.receipts)
+                    uiState.receipts.isEmpty() -> EmptyContent(isSyncing = uiState.isSyncing, bottom = bottom)
+                    else -> ReceiptList(uiState.receipts, bottom = bottom)
                 }
             }
         }
     }
 }
 
-/** Neutral top area (Material 3), brand green only in the title, like "Cesto" on onboarding. */
 @Composable
-private fun ScreenTitle() {
-    Text(
-        text = stringResource(Res.string.receipts_title),
-        style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
-    )
-}
-
-@Composable
-private fun ReceiptList(receipts: List<ReceiptItemUi>) {
+private fun ReceiptList(receipts: List<ReceiptItemUi>, bottom: Dp) {
     LazyColumn(
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp + bottom),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -172,9 +172,12 @@ private fun StatusChip(status: ReceiptStatus) {
 }
 
 @Composable
-private fun EmptyContent(isSyncing: Boolean) {
+private fun EmptyContent(isSyncing: Boolean, bottom: Dp) {
     // Scrollable so pull-to-refresh also works on an empty list.
-    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(24.dp)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + bottom),
+    ) {
         item {
             Text(
                 text = stringResource(if (isSyncing) Res.string.receipts_syncing else Res.string.receipts_empty),
@@ -217,7 +220,7 @@ internal fun DemoReceiptsScreen(modifier: Modifier = Modifier) {
             modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            ScreenTitle()
+            CestoScreenTitle(stringResource(Res.string.receipts_title))
             Text(
                 text = stringResource(Res.string.receipts_demo),
                 style = MaterialTheme.typography.bodyLarge,

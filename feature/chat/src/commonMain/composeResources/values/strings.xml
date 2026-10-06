@@ -1,0 +1,4 @@
+<resources>
+    <string name="chat_title">Ask</string>
+    <string name="chat_placeholder">Soon you can ask questions about your receipts here, like “How much did I spend in September?”. First, set up your Gemini key in Settings.</string>
+</resources>
