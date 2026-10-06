@@ -1,4 +1,30 @@
 <resources>
     <string name="chat_title">Ask</string>
-    <string name="chat_placeholder">Soon you can ask questions about your receipts here, like “How much did I spend in September?”. First, set up your Gemini key in Settings.</string>
+    <string name="chat_new">New chat</string>
+    <string name="chat_intro">Ask about what you bought at Continente. Gemini picks what to look up, and the numbers are counted on your phone from your receipts.</string>
+    <string name="chat_suggestion_spending">How much did I spend last month?</string>
+    <string name="chat_suggestion_yogurt">How many yogurts did I buy this year?</string>
+    <string name="chat_suggestion_top">What do I buy most often?</string>
+    <string name="chat_input_hint">Ask about your receipts</string>
+    <string name="chat_send">Send</string>
+    <string name="chat_no_key_title">Set up Gemini first</string>
+    <string name="chat_no_key_text">Answers come from Gemini with your own key. Add it in Settings; it stays on this phone.</string>
+    <string name="chat_no_key_button">Open Settings</string>
+    <plurals name="chat_based_on">
+        <item quantity="one">From %1$d receipt</item>
+        <item quantity="other">From %1$d receipts</item>
+    </plurals>
+    <string name="chat_step_thinking">Thinking…</string>
+    <string name="chat_step_products">Looking up products…</string>
+    <string name="chat_step_counting">Counting what you bought…</string>
+    <string name="chat_step_spending">Adding up what you spent…</string>
+    <string name="chat_step_ranking">Ranking your products…</string>
+    <string name="chat_step_receipts">Checking your receipts…</string>
+    <string name="chat_error_no_key">No Gemini key: add one in Settings.</string>
+    <string name="chat_error_key_rejected">Gemini didn\'t accept your key. Check it in Settings.</string>
+    <string name="chat_error_quota">Your Gemini quota is used up for now. Wait a minute, or enable billing on the key\'s project.</string>
+    <string name="chat_error_busy">Gemini is busy right now. Try again in a moment.</string>
+    <string name="chat_error_no_connection">No connection to Gemini. Check your internet and try again.</string>
+    <string name="chat_error_too_many_steps">That question needed too many steps. Try asking it more simply.</string>
+    <string name="chat_error_failed">Something went wrong. Try again.</string>
 </resources>

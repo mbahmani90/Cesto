@@ -11,7 +11,10 @@ import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 class GeminiApiTest {
 
@@ -54,5 +57,28 @@ class GeminiApiTest {
         val api = GeminiApi(createHttpClient(MockEngine { throw IOException("offline") }))
 
         assertEquals(KeyCheck.NO_CONNECTION, api.checkKey("x"))
+    }
+
+    @Test
+    fun generateJson_returnsTheTextOfTheFirstCandidate() = runTest {
+        val api = api(body = """{"candidates":[{"content":{"parts":[{"text":"{\"lines\":"},{"text":"[]}"}]},"finishReason":"STOP"}]}""")
+
+        val json = api.generateJson("AIza-test", "instruction", "prompt", buildJsonObject { put("type", "OBJECT") })
+
+        assertEquals("{\"lines\":[]}", json)
+        assertEquals(
+            "https://generativelanguage.googleapis.com/v1beta/models/${GeminiApi.EXTRACTION_MODEL}:generateContent",
+            requests.single().url.toString(),
+        )
+    }
+
+    @Test
+    fun generateJson_noText_throwsWithTheReason() = runTest {
+        val api = api(body = """{"candidates":[{"finishReason":"SAFETY"}]}""")
+
+        val error = assertFailsWith<GeminiEmptyResponseException> {
+            api.generateJson("AIza-test", "instruction", "prompt", buildJsonObject { })
+        }
+        assertEquals("SAFETY", error.finishReason)
     }
 }

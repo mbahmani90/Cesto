@@ -1,0 +1,25 @@
+-- Version 2 → 3: items and products extracted from the receipt text (by Gemini).
+-- Existing receipts keep their status; the next sync extracts their items.
+CREATE TABLE product (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    raw_name TEXT NOT NULL UNIQUE,
+    normalized_name TEXT NOT NULL,
+    category TEXT,
+    units_per_pack INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE receipt_item (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    receipt_id INTEGER NOT NULL REFERENCES receipt(id) ON DELETE CASCADE,
+    line_number INTEGER NOT NULL,
+    kind TEXT NOT NULL,
+    product_id INTEGER REFERENCES product(id),
+    raw_name TEXT NOT NULL,
+    quantity REAL NOT NULL,
+    unit TEXT NOT NULL,
+    unit_price_cents INTEGER,
+    line_total_cents INTEGER NOT NULL
+);
+
+CREATE INDEX receipt_item_receipt ON receipt_item(receipt_id);
+CREATE INDEX receipt_item_product ON receipt_item(product_id);

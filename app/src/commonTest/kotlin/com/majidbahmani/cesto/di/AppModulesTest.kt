@@ -1,5 +1,6 @@
 package com.majidbahmani.cesto.di
 
+import com.majidbahmani.cesto.feature.chat.presentation.viewmodel.ChatViewModel
 import com.majidbahmani.cesto.feature.onboarding.presentation.viewmodel.OnboardingViewModel
 import com.majidbahmani.cesto.feature.receipts.data.remote.GmailApi
 import com.majidbahmani.cesto.feature.receipts.data.local.PdfTextExtractor
@@ -107,5 +108,10 @@ class AppModulesTest {
     @Test
     fun receiptsViewModel_resolvesWithTheRealRepositoryAndDatabase() {
         app.koin.get<ReceiptsViewModel>()
+    }
+
+    @Test
+    fun chatViewModel_resolvesWithGeminiAndTheSqlTools() {
+        app.koin.get<ChatViewModel>()
     }
 }
