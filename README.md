@@ -8,6 +8,7 @@ This is a Kotlin Multiplatform project targeting Android, iOS.
   It also builds the iOS framework (`Shared`).
   - [commonMain](./app/src/commonMain/kotlin) is for code that’s common for all targets.
   - [androidMain](./app/src/androidMain/kotlin) and [iosMain](./app/src/iosMain/kotlin) are for platform-specific code.
+* [/systemdesign](./systemdesign/src) is the design system: `CestoTheme` (light + dark colour schemes) and components used by 2+ features.
 * [/core](./core/src) is non-UI code shared by features: the Ktor `HttpClient` (OkHttp / Darwin engine) and its Koin module.
 
 ### Running the apps

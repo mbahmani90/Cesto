@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window only, before the first Compose frame; the UI theme is CestoTheme (:systemdesign). -->
+    <style name="Theme.Cesto" parent="@android:style/Theme.Material.Light.NoActionBar" />
+</resources>
