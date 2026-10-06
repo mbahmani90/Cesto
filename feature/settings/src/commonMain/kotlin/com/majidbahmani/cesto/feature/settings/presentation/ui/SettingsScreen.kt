@@ -51,6 +51,9 @@ import com.majidbahmani.cesto.feature.settings.resources.Res
 import com.majidbahmani.cesto.feature.settings.resources.settings_account_hint
 import com.majidbahmani.cesto.feature.settings.resources.settings_account_invalid
 import com.majidbahmani.cesto.feature.settings.resources.settings_account_label
+import com.majidbahmani.cesto.feature.settings.resources.settings_billing_button
+import com.majidbahmani.cesto.feature.settings.resources.settings_billing_text
+import com.majidbahmani.cesto.feature.settings.resources.settings_billing_title
 import com.majidbahmani.cesto.feature.settings.resources.settings_cancel
 import com.majidbahmani.cesto.feature.settings.resources.settings_change
 import com.majidbahmani.cesto.feature.settings.resources.settings_gemini_intro
@@ -92,6 +95,7 @@ internal fun SettingsRoute(
         uiState = uiState,
         onOpenCloudConsole = { uriHandler.openUri(withGoogleAccount(CLOUD_PROJECT_URL, uiState.accountEmail)) },
         onOpenAiStudio = { uriHandler.openUri(withGoogleAccount(AI_STUDIO_KEYS_URL, uiState.accountEmail)) },
+        onOpenBilling = { uriHandler.openUri(withGoogleAccount(AI_STUDIO_KEYS_URL, uiState.accountEmail)) },
         onAccountEmailChange = viewModel::onAccountEmailChange,
         onKeyInputChange = viewModel::onKeyInputChange,
         onToggleKeyVisibility = viewModel::onToggleKeyVisibility,
@@ -108,6 +112,7 @@ internal fun SettingsScreen(
     uiState: SettingsUiState,
     onOpenCloudConsole: () -> Unit,
     onOpenAiStudio: () -> Unit,
+    onOpenBilling: () -> Unit,
     onAccountEmailChange: (String) -> Unit,
     onKeyInputChange: (String) -> Unit,
     onToggleKeyVisibility: () -> Unit,
@@ -140,11 +145,14 @@ internal fun SettingsScreen(
                 uiState.isLoading -> Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
-                !uiState.isEditing && uiState.savedKeyMasked != null -> SavedKeyCard(
-                    masked = uiState.savedKeyMasked,
-                    onChangeKey = onChangeKey,
-                    onRemoveKey = onRemoveKey,
-                )
+                !uiState.isEditing && uiState.savedKeyMasked != null -> {
+                    SavedKeyCard(
+                        masked = uiState.savedKeyMasked,
+                        onChangeKey = onChangeKey,
+                        onRemoveKey = onRemoveKey,
+                    )
+                    BillingCard(onOpenBilling = onOpenBilling)
+                }
                 else -> {
                     AccountField(email = uiState.accountEmail, onEmailChange = onAccountEmailChange)
                     StepCard(
@@ -281,6 +289,22 @@ private fun SavedKeyCard(masked: String, onChangeKey: () -> Unit, onRemoveKey: (
     }
 }
 
+/** The app can't see a key's plan (no API for it), so this is shown for every saved key. */
+@Composable
+private fun BillingCard(onOpenBilling: () -> Unit) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(Res.string.settings_billing_title), style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = stringResource(Res.string.settings_billing_text),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(onClick = onOpenBilling) { Text(stringResource(Res.string.settings_billing_button)) }
+        }
+    }
+}
+
 @Composable
 private fun Feedback(result: SaveKeyResult) {
     val isSuccess = result == SaveKeyResult.SAVED
@@ -308,7 +332,7 @@ private fun SettingsSetupPreview() {
     CestoTheme {
         SettingsScreen(
             uiState = SettingsUiState(isLoading = false, isEditing = true, keyInput = "AIzaSy…", feedback = SaveKeyResult.INVALID_KEY),
-            onOpenCloudConsole = {}, onOpenAiStudio = {}, onAccountEmailChange = {}, onKeyInputChange = {}, onToggleKeyVisibility = {},
+            onOpenCloudConsole = {}, onOpenAiStudio = {}, onOpenBilling = {}, onAccountEmailChange = {}, onKeyInputChange = {}, onToggleKeyVisibility = {},
             onTestAndSave = {}, onChangeKey = {}, onCancelChange = {}, onRemoveKey = {},
         )
     }
@@ -320,7 +344,7 @@ private fun SettingsSavedDarkPreview() {
     CestoTheme(darkTheme = true) {
         SettingsScreen(
             uiState = SettingsUiState(isLoading = false, savedKeyMasked = "AIza…x9Q2", feedback = SaveKeyResult.SAVED),
-            onOpenCloudConsole = {}, onOpenAiStudio = {}, onAccountEmailChange = {}, onKeyInputChange = {}, onToggleKeyVisibility = {},
+            onOpenCloudConsole = {}, onOpenAiStudio = {}, onOpenBilling = {}, onAccountEmailChange = {}, onKeyInputChange = {}, onToggleKeyVisibility = {},
             onTestAndSave = {}, onChangeKey = {}, onCancelChange = {}, onRemoveKey = {},
         )
     }
