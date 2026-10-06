@@ -65,8 +65,11 @@ class AskQuestionUseCase(
     }
 
     companion object {
-        /** Safety limit: a normal question needs 2–3 rounds. */
-        const val MAX_ROUNDS = 5
+        /**
+         * Safety limit: a normal question needs 2–3 rounds; complex ones (comparing periods, many products)
+         * get room to explore. Each round is one Gemini request, and the conversation it resends grows.
+         */
+        const val MAX_ROUNDS = 30
 
         /** Earlier questions (with their answers) sent along with a new one. */
         const val MAX_PREVIOUS_QUESTIONS = 3

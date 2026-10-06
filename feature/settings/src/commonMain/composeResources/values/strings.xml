@@ -27,6 +27,10 @@
     <string name="settings_change">Change</string>
     <string name="settings_remove">Remove</string>
 
+    <string name="settings_billing_title">Billing</string>
+    <string name="settings_billing_text">On the free tier, Gemini allows only a few requests a minute, and Google may use what you send (your receipt items and questions) to improve its products. Turn on billing for the key’s project to raise the limit and keep your data out of training. In Google AI Studio, choose “Set up billing” next to your key.</string>
+    <string name="settings_billing_button">Enable billing</string>
+
     <string name="settings_result_saved">Key works and is saved.</string>
     <string name="settings_result_empty">Paste your key first.</string>
     <string name="settings_result_invalid">Google says this isn’t a valid API key. Copy it again from Google AI Studio.</string>

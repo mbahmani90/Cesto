@@ -3,7 +3,10 @@ package com.majidbahmani.cesto.feature.settings.presentation.mapper
 /** Step 1: a new Google Cloud project (billing is turned on there). */
 internal const val CLOUD_PROJECT_URL = "https://console.cloud.google.com/projectcreate"
 
-/** Step 2: API keys in Google AI Studio, where the project is chosen. */
+/**
+ * Step 2: API keys in Google AI Studio, where the project is chosen. Each key's row also shows its plan,
+ * with "Set up billing" for a free-tier key: the "Enable billing" button opens this page too.
+ */
 internal const val AI_STUDIO_KEYS_URL = "https://aistudio.google.com/apikey"
 
 /**
