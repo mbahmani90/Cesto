@@ -2,7 +2,10 @@ package com.majidbahmani.cesto.feature.chat.data.tools
 
 import com.majidbahmani.cesto.database.CestoDatabase
 import com.majidbahmani.cesto.feature.chat.domain.model.ToolCall
+import com.majidbahmani.cesto.database.toBlob
+import com.majidbahmani.cesto.feature.chat.fake.FakeEmbeddingProvider
 import com.majidbahmani.cesto.feature.chat.fake.createTestDriver
+import com.majidbahmani.cesto.llm.embedding.EmbeddingUnavailableException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDateTime
@@ -28,7 +31,9 @@ import kotlin.test.assertTrue
 class SqlReceiptToolsTest {
 
     private val database = CestoDatabase(createTestDriver())
-    private val tools = SqlReceiptTools(database, Dispatchers.Unconfined)
+    // 2-number vectors: x = "dairy", y = "fruit".
+    private val embeddings = FakeEmbeddingProvider(mapOf("dairy" to floatArrayOf(1f, 0f), "fruit" to floatArrayOf(0f, 1f)))
+    private val tools = SqlReceiptTools(database, Dispatchers.Unconfined, embeddings)
 
     private val yogurtPack = product("IOG GREGO NAT 4X125G", "Iogurte grego natural 4x125 g", "Laticinios", unitsPerPack = 4)
     private val yogurt = product("IOG LIQ MORANGO", "Iogurte liquido morango", "Laticinios")
@@ -44,6 +49,56 @@ class SqlReceiptToolsTest {
         item(sept10, banana, quantity = 0.76, unit = "KG", totalCents = 90)
         item(sept30Late, yogurt, quantity = 3.0, totalCents = 150)
         item(aug5, yogurtPack, quantity = 1.0, totalCents = 199)
+        vector(yogurtPack, 0.9f, 0.1f)
+        vector(yogurt, 0.8f, 0.3f)
+        vector(banana, 0.1f, 0.95f)
+    }
+
+    @Test
+    fun semanticSearch_ranksByMeaning_closestFirst_dropsUnrelated() = runTest {
+        val output = run("semanticSearch", buildJsonObject { put("query", "dairy") })
+
+        val products = output["products"]!!.jsonArray.map { it.jsonObject }
+        assertEquals(listOf(yogurtPack, yogurt), products.map { it["id"]!!.jsonPrimitive.long }) // banana: score 0.1
+        assertEquals("Laticinios", products.first()["category"]!!.jsonPrimitive.content)
+        assertTrue(products.first()["score"]!!.jsonPrimitive.double > products.last()["score"]!!.jsonPrimitive.double)
+        assertEquals(listOf("dairy"), embeddings.asked)
+    }
+
+    @Test
+    fun semanticSearch_respectsTheLimit() = runTest {
+        val output = run("semanticSearch", buildJsonObject { put("query", "dairy"); put("limit", 1) })
+
+        assertEquals(1, output["products"]!!.jsonArray.size)
+    }
+
+    @Test
+    fun semanticSearch_unavailable_pointsToFindProducts() = runTest {
+        embeddings.unavailable = EmbeddingUnavailableException.Reason.QUOTA
+
+        val output = run("semanticSearch", buildJsonObject { put("query", "dairy") })
+
+        assertTrue(output["error"]!!.jsonPrimitive.content.contains("findProducts"))
+    }
+
+    @Test
+    fun semanticSearch_withoutVectors_saysSo_withoutAskingGemini() = runTest {
+        database.productEmbeddingQueries.deleteAll()
+
+        val output = run("semanticSearch", buildJsonObject { put("query", "dairy") })
+
+        assertTrue(output["note"]!!.jsonPrimitive.content.contains("findProducts"))
+        assertTrue(embeddings.asked.isEmpty())
+    }
+
+    @Test
+    fun semanticSearch_onlyUsesVectorsOfTheCurrentModel() = runTest {
+        database.productEmbeddingQueries.deleteAll()
+        database.productEmbeddingQueries.upsert(banana, "old@2", "Banana", floatArrayOf(1f, 0f).toBlob())
+
+        val output = run("semanticSearch", buildJsonObject { put("query", "dairy") })
+
+        assertTrue("products" !in output)
     }
 
     @Test
@@ -172,6 +227,9 @@ class SqlReceiptToolsTest {
     }
 
     private var line = 0L
+
+    private fun vector(productId: Long, x: Float, y: Float) =
+        database.productEmbeddingQueries.upsert(productId, embeddings.modelId, "text", floatArrayOf(x, y).toBlob())
 
     private fun item(receiptId: Long, productId: Long, quantity: Double, totalCents: Long, unit: String = "UNIT") {
         database.receiptItemQueries.insert(receiptId, line++, "ITEM", productId, "raw", quantity, unit, null, totalCents)

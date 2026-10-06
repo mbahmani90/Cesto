@@ -18,7 +18,8 @@ val receiptToolDeclarations: JsonArray = buildJsonArray {
             "description",
             "Finds products bought at Continente whose name or category contains any keyword. " +
                 "Names are Portuguese (e.g. iogurte, leite, ovos, banana): use Portuguese stems without accents, " +
-                "e.g. \"iogurt\" for yogurt. Returns at most 50 products with their ids.",
+                "e.g. \"iogurt\" for yogurt. Returns at most 50 products with their ids. " +
+                "For categories or meaning that aren't in names (dairy, snacks), use semanticSearch.",
         )
         putJsonObject("parameters") {
             put("type", "OBJECT")
@@ -33,6 +34,30 @@ val receiptToolDeclarations: JsonArray = buildJsonArray {
         }
     }
     addJsonObject {
+        put("name", ReceiptToolNames.SEMANTIC_SEARCH)
+        put(
+            "description",
+            "Finds products by meaning, for categories or descriptions that aren't in product names " +
+                "(e.g. dairy, snacks, sweet things, cleaning products, breakfast). Returns the closest products " +
+                "with a similarity score (0 to 1, higher is closer). Close isn't always right: keep only the ones that " +
+                "really match the question. For a product name or brand, use findProducts.",
+        )
+        putJsonObject("parameters") {
+            put("type", "OBJECT")
+            putJsonObject("properties") {
+                putJsonObject("query") {
+                    put("type", "STRING")
+                    put("description", "A few search words, in English or Portuguese, e.g. \"dairy\" or \"laticínios\".")
+                }
+                putJsonObject("limit") {
+                    put("type", "INTEGER")
+                    put("description", "1 to 30, default 15.")
+                }
+            }
+            putJsonArray("required") { add("query") }
+        }
+    }
+    addJsonObject {
         put("name", ReceiptToolNames.SUM_QUANTITY)
         put(
             "description",
@@ -42,7 +67,7 @@ val receiptToolDeclarations: JsonArray = buildJsonArray {
         putJsonObject("parameters") {
             put("type", "OBJECT")
             putJsonObject("properties") {
-                productIds("Ids from findProducts.")
+                productIds("Ids from findProducts or semanticSearch.")
                 dateRange()
             }
             putJsonArray("required") { add("productIds"); add("from"); add("to") }
@@ -58,7 +83,7 @@ val receiptToolDeclarations: JsonArray = buildJsonArray {
         putJsonObject("parameters") {
             put("type", "OBJECT")
             putJsonObject("properties") {
-                productIds("Optional ids from findProducts; leave out for all spending.")
+                productIds("Optional ids from findProducts or semanticSearch; leave out for all spending.")
                 dateRange()
             }
             putJsonArray("required") { add("from"); add("to") }

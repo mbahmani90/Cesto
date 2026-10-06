@@ -38,13 +38,13 @@
 
   <rect class="store" x="60" y="220" width="380" height="60" rx="8"/>
   <text class="th" x="250" y="240" text-anchor="middle" dominant-baseline="central">product_embedding</text>
-  <text class="ts" x="250" y="261" text-anchor="middle" dominant-baseline="central">7 · gemini-embedding-001@768 · [0.66, 0.08, …]</text>
+  <text class="ts" x="250" y="261" text-anchor="middle" dominant-baseline="central">7 · gemini-embedding-2@768 · [0.66, 0.08, …]</text>
 
   <rect class="embed" x="540" y="130" width="150" height="130" rx="8"/>
   <text class="th" x="615" y="160" text-anchor="middle" dominant-baseline="central">Gemini</text>
   <text class="th" x="615" y="178" text-anchor="middle" dominant-baseline="central">embeddings</text>
   <text class="ts" x="615" y="204" text-anchor="middle" dominant-baseline="central">text → 768 numbers</text>
-  <text class="tl" x="615" y="226" text-anchor="middle" dominant-baseline="central">RETRIEVAL_DOCUMENT</text>
+  <text class="tl" x="615" y="226" text-anchor="middle" dominant-baseline="central">"title: none | text: …"</text>
   <text class="tl" x="615" y="243" text-anchor="middle" dominant-baseline="central">up to 100 per request</text>
 
   <line class="arr" x1="442" y1="150" x2="537" y2="150" marker-end="url(#arrow)"/>
@@ -84,7 +84,7 @@
 
   <rect class="embed" x="540" y="495" width="150" height="62" rx="8"/>
   <text class="th" x="615" y="516" text-anchor="middle" dominant-baseline="central">Gemini embeddings</text>
-  <text class="tl" x="615" y="537" text-anchor="middle" dominant-baseline="central">RETRIEVAL_QUERY</text>
+  <text class="tl" x="615" y="537" text-anchor="middle" dominant-baseline="central">"task: search result | query"</text>
   <line class="arr" x1="442" y1="512" x2="537" y2="512" marker-end="url(#arrow)"/>
   <text class="tl" x="490" y="501" text-anchor="middle" dominant-baseline="central">search words</text>
   <line class="arr" x1="537" y1="546" x2="443" y2="546" marker-end="url(#arrow)"/>

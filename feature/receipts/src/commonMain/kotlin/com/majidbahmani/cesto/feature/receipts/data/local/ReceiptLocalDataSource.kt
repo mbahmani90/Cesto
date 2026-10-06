@@ -4,6 +4,9 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import com.majidbahmani.cesto.database.CestoDatabase
 import com.majidbahmani.cesto.database.Receipt as ReceiptRow
+import com.majidbahmani.cesto.database.toBlob
+import com.majidbahmani.cesto.feature.receipts.data.embedding.ProductText
+import com.majidbahmani.cesto.feature.receipts.data.embedding.productEmbedText
 import com.majidbahmani.cesto.feature.receipts.data.extraction.ExtractedLine
 import com.majidbahmani.cesto.feature.receipts.data.parser.ParsedReceipt
 import com.majidbahmani.cesto.feature.receipts.data.remote.PdfAttachmentRef
@@ -22,6 +25,7 @@ class ReceiptLocalDataSource(
     private val messages = database.gmailMessageQueries
     private val products = database.productQueries
     private val items = database.receiptItemQueries
+    private val embeddings = database.productEmbeddingQueries
 
     fun observeAll(): Flow<List<ReceiptRow>> = receipts.selectAll().asFlow().mapToList(ioDispatcher)
 
@@ -96,6 +100,25 @@ class ReceiptLocalDataSource(
             }
             receipts.markReady(receiptId)
         }
+    }
+
+    /** Products without a vector of [model], or whose vector was made from a different text. */
+    suspend fun productsToEmbed(model: String): List<ProductText> = withContext(ioDispatcher) {
+        embeddings.productsWithEmbedText(model).executeAsList().mapNotNull { row ->
+            val text = productEmbedText(row.normalized_name, row.category)
+            if (text == row.embed_text) null else ProductText(row.id, text)
+        }
+    }
+
+    suspend fun saveEmbeddings(model: String, vectors: List<Pair<ProductText, FloatArray>>) = withContext(ioDispatcher) {
+        database.transaction {
+            vectors.forEach { (product, vector) -> embeddings.upsert(product.productId, model, product.text, vector.toBlob()) }
+        }
+    }
+
+    /** Called once every product has a vector of [model]: older models' vectors are no longer searched. */
+    suspend fun deleteEmbeddingsOfOtherModels(model: String) = withContext(ioDispatcher) {
+        embeddings.deleteOtherModels(model)
     }
 
     suspend fun markFailed(id: Long) = withContext(ioDispatcher) {

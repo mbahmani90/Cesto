@@ -2,10 +2,13 @@ package com.majidbahmani.cesto.feature.chat.data.tools
 
 import com.majidbahmani.cesto.core.logging.logWarning
 import com.majidbahmani.cesto.database.CestoDatabase
+import com.majidbahmani.cesto.database.toVector
 import com.majidbahmani.cesto.feature.chat.domain.model.ReceiptToolNames
 import com.majidbahmani.cesto.feature.chat.domain.model.ReceiptTools
 import com.majidbahmani.cesto.feature.chat.domain.model.ToolCall
 import com.majidbahmani.cesto.feature.chat.domain.model.ToolResult
+import com.majidbahmani.cesto.llm.embedding.EmbeddingProvider
+import com.majidbahmani.cesto.llm.embedding.EmbeddingUnavailableException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -38,6 +41,7 @@ import kotlin.time.Instant
 class SqlReceiptTools(
     private val database: CestoDatabase,
     private val ioDispatcher: CoroutineDispatcher,
+    private val embeddings: EmbeddingProvider,
     private val timeZone: TimeZone = LISBON,
 ) : ReceiptTools {
 
@@ -47,6 +51,7 @@ class SqlReceiptTools(
         try {
             when (call.name) {
                 ReceiptToolNames.FIND_PRODUCTS -> findProducts(call)
+                ReceiptToolNames.SEMANTIC_SEARCH -> semanticSearch(call)
                 ReceiptToolNames.SUM_QUANTITY -> sumQuantity(call)
                 ReceiptToolNames.SUM_SPENDING -> sumSpending(call)
                 ReceiptToolNames.TOP_PRODUCTS -> topProducts(call)
@@ -88,6 +93,47 @@ class SqlReceiptTools(
                     }
                 }
                 if (products.isEmpty()) put("note", "No product matches. Try other Portuguese keywords.")
+            },
+        )
+    }
+
+    /**
+     * By meaning: the search words get a vector (one Gemini request), compared on the phone with every
+     * product's vector. Returns candidates with scores; the model decides which really match.
+     */
+    private suspend fun semanticSearch(call: ToolCall): ToolResult {
+        val query = call.arguments.string("query") ?: throw BadArgumentException("query is required, e.g. \"dairy\".")
+        val limit = (call.arguments.long("limit") ?: DEFAULT_SEMANTIC).coerceIn(1, MAX_SEMANTIC).toInt()
+        val products = database.productEmbeddingQueries.vectorsForModel(embeddings.modelId).executeAsList()
+        if (products.isEmpty()) {
+            return ToolResult(call, buildJsonObject { put("note", "No products can be searched by meaning yet. Use findProducts.") })
+        }
+        val queryVector = try {
+            embeddings.embedQuery(query)
+        } catch (e: EmbeddingUnavailableException) {
+            logWarning(TAG, "semanticSearch unavailable (${e.reason})")
+            return errorResult(call, "Search by meaning isn't available right now. Use findProducts with Portuguese keywords.")
+        }
+        val matches = products
+            .map { it to cosine(queryVector, it.vector.toVector()) }
+            .filter { (_, score) -> score >= MIN_SCORE }
+            .sortedByDescending { (_, score) -> score }
+            .take(limit)
+        return ToolResult(
+            call,
+            buildJsonObject {
+                putJsonArray("products") {
+                    matches.forEach { (p, score) ->
+                        addJsonObject {
+                            put("id", p.product_id)
+                            put("name", p.normalized_name)
+                            put("printedName", p.raw_name)
+                            p.category?.let { put("category", it) }
+                            put("score", (score * 100).roundToLong() / 100.0)
+                        }
+                    }
+                }
+                put("note", if (matches.isEmpty()) "Nothing close. Try other words or findProducts." else "Closest first; keep only the ones that match.")
             },
         )
     }
@@ -259,6 +305,11 @@ class SqlReceiptTools(
         const val MAX_KEYWORDS = 5
         const val DEFAULT_TOP = 10L
         const val MAX_TOP = 20L
+        const val DEFAULT_SEMANTIC = 15L
+        const val MAX_SEMANTIC = 30L
+
+        /** Below this, a product is unrelated to the search words. A loose floor: the model filters the rest. */
+        const val MIN_SCORE = 0.25f
         const val UNIT = "UNIT"
         const val KG = "KG"
         const val READY = "READY"

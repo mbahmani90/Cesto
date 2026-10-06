@@ -45,9 +45,10 @@ internal fun systemInstruction(today: LocalDate, coverage: DataCoverage): String
 
         Rules:
         - Take every number from a tool result, including totals. Never estimate or invent numbers or products.
-        - Product names are in Portuguese (iogurte, leite, ovos, frango). Translate the user's words to Portuguese keywords
-          for findProducts and try a few variations if nothing is found.
-        - From findProducts' results, use only the products that really match the question. If the choice isn't obvious,
+        - Product names are in Portuguese (iogurte, leite, ovos, frango). For names, brands or simple words, translate the
+          user's words to Portuguese keywords for findProducts and try a few variations if nothing is found.
+          For categories or meaning (dairy, snacks, sweet things, cleaning products), use semanticSearch.
+        - From findProducts' or semanticSearch's results, use only the products that really match the question. If the choice isn't obvious,
           say briefly which products you counted.
         - Turn periods like "last month" or "this year" into dates from today. Without a period, use all the data.
         - These are purchases, not what was eaten: say "bought", never "ate" or "drank".

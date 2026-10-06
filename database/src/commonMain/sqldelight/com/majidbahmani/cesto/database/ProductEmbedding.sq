@@ -1,0 +1,40 @@
+-- One vector per product and embedding model (migration 3.sqm). Kept apart from product: vectors are
+-- derived and recomputable, and a new model can fill its rows while the old ones still answer searches.
+CREATE TABLE product_embedding (
+    product_id INTEGER NOT NULL REFERENCES product(id) ON DELETE CASCADE,
+    -- e.g. 'gemini-embedding-2@768': vectors of different models can't be compared.
+    model TEXT NOT NULL,
+    -- Exactly what was embedded: when the product's text changes, it's embedded again.
+    embed_text TEXT NOT NULL,
+    -- Float32 little-endian (VectorBlob.kt), 768 numbers ≈ 3 KB.
+    vector BLOB NOT NULL,
+    PRIMARY KEY (product_id, model)
+);
+
+-- Every product, with the text its vector for :model was made from (null: no vector yet).
+productsWithEmbedText:
+SELECT p.id, p.normalized_name, p.category, e.embed_text
+FROM product p
+LEFT JOIN product_embedding e ON e.product_id = p.id AND e.model = :model
+ORDER BY p.id;
+
+upsert:
+INSERT OR REPLACE INTO product_embedding(product_id, model, embed_text, vector) VALUES (?, ?, ?, ?);
+
+-- semanticSearch compares the query with all of these on the phone (hundreds of rows: no index needed).
+vectorsForModel:
+SELECT e.product_id, p.normalized_name, p.raw_name, p.category, e.vector
+FROM product_embedding e
+JOIN product p ON p.id = e.product_id
+WHERE e.model = ?;
+
+-- After switching models, once every product has a vector of the new one.
+deleteOtherModels:
+DELETE FROM product_embedding WHERE model != ?;
+
+count:
+SELECT COUNT(*) FROM product_embedding;
+
+-- "Disconnect Gmail" deletes all local data (explicit: foreign keys aren't enforced without PRAGMA foreign_keys).
+deleteAll:
+DELETE FROM product_embedding;

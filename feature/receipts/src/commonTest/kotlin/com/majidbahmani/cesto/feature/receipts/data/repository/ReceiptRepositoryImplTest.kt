@@ -9,6 +9,7 @@ import com.majidbahmani.cesto.feature.receipts.data.remote.GmailNotAuthorizedExc
 import com.majidbahmani.cesto.feature.receipts.domain.model.ReceiptStatus
 import com.majidbahmani.cesto.feature.receipts.domain.model.SyncFailure
 import com.majidbahmani.cesto.feature.receipts.domain.model.SyncResult
+import com.majidbahmani.cesto.feature.receipts.fake.FakeEmbeddingProvider
 import com.majidbahmani.cesto.feature.receipts.fake.FakeGmailApi
 import com.majidbahmani.cesto.feature.receipts.fake.FakeGmailApi.Mail
 import com.majidbahmani.cesto.feature.receipts.fake.FakeGeminiKeyStore
@@ -17,6 +18,7 @@ import com.majidbahmani.cesto.feature.receipts.fake.FakeReceiptItemExtractor
 import com.majidbahmani.cesto.feature.receipts.fake.FakeReceiptFileStore
 import com.majidbahmani.cesto.feature.receipts.fake.createTestDriver
 import com.majidbahmani.cesto.gmailauth.GmailAuthError
+import com.majidbahmani.cesto.llm.embedding.EmbeddingUnavailableException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -35,6 +37,7 @@ class ReceiptRepositoryImplTest {
     private val files = FakeReceiptFileStore()
     private val extractor = FakePdfTextExtractor()
     private val itemExtractor = FakeReceiptItemExtractor()
+    private val embeddings = FakeEmbeddingProvider()
     private val geminiKeys = FakeGeminiKeyStore(initial = null) // no key: item extraction skipped unless a test sets one
 
     @AfterTest
@@ -47,6 +50,7 @@ class ReceiptRepositoryImplTest {
         textExtractor = extractor,
         parser = ContinenteReceiptParser(),
         itemExtractor = itemExtractor,
+        embeddings = embeddings,
         geminiKeys = geminiKeys,
         currentTimeMillis = { NOW },
         maxParallelEmails = maxParallelEmails,
@@ -330,6 +334,77 @@ class ReceiptRepositoryImplTest {
 
         assertTrue(itemExtractor.sentSections.isEmpty())
         assertEquals("TEXT_EXTRACTED", rows().single().status)
+    }
+
+    @Test
+    fun newProducts_getAVector_onlyNameAndCategoryAreSent() = runTest {
+        geminiKeys.key.value = "AIza-test"
+        gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = mapOf("1" to pdf(PDFBOX_RECEIPT)))
+
+        repository().sync(lookBackMonths = 3)
+
+        assertEquals(
+            listOf("Leite pasteurizado gordo 1 L. Categoria: Laticinios", "Banana. Categoria: Frutas e Legumes"),
+            embeddings.sentTexts,
+        )
+        assertEquals(2, database.productEmbeddingQueries.count().executeAsOne())
+    }
+
+    @Test
+    fun productsBoughtAgain_areNotEmbeddedAgain() = runTest {
+        geminiKeys.key.value = "AIza-test"
+        gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = mapOf("1" to pdf(PDFBOX_RECEIPT)))
+        val repository = repository()
+        repository.sync(lookBackMonths = 3)
+        embeddings.sentTexts.clear()
+
+        gmail.mailbox += Mail("m2", receivedAt = 2_000, pdfs = mapOf("1" to pdf(PDFBOX_RECEIPT))) // same milk and banana
+        repository.sync(lookBackMonths = 3)
+
+        assertEquals(2, rows().count { it.status == "READY" })
+        assertTrue(embeddings.sentTexts.isEmpty())
+    }
+
+    @Test
+    fun newEmbeddingModel_embedsEverythingAgain_andDropsTheOldVectors() = runTest {
+        geminiKeys.key.value = "AIza-test"
+        gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = mapOf("1" to pdf(PDFBOX_RECEIPT)))
+        val repository = repository()
+        repository.sync(lookBackMonths = 3)
+
+        embeddings.modelId = "other@2"
+        repository.sync(lookBackMonths = 3)
+
+        assertEquals(4, embeddings.sentTexts.size) // 2 products × 2 models
+        assertEquals(2, database.productEmbeddingQueries.count().executeAsOne())
+        assertEquals(2, database.productEmbeddingQueries.vectorsForModel("other@2").executeAsList().size)
+    }
+
+    @Test
+    fun quotaForVectors_keepsTheItems_andTriesAgainNextSync() = runTest {
+        geminiKeys.key.value = "AIza-test"
+        embeddings.unavailable = EmbeddingUnavailableException.Reason.QUOTA
+        gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = mapOf("1" to pdf(PDFBOX_RECEIPT)))
+        val repository = repository()
+
+        val result = repository.sync(lookBackMonths = 3)
+
+        assertEquals(SyncResult.Success(newReceipts = 1, downloaded = 1), result)
+        assertEquals("READY", rows().single().status)
+        assertEquals(0, database.productEmbeddingQueries.count().executeAsOne())
+
+        embeddings.unavailable = null
+        repository.sync(lookBackMonths = 3)
+        assertEquals(2, database.productEmbeddingQueries.count().executeAsOne())
+    }
+
+    @Test
+    fun withoutGeminiKey_noVectorsAreMade() = runTest {
+        database.productQueries.insertIfNew("BANANA", "Banana", null, 1) // e.g. key removed after extraction
+
+        repository().sync(lookBackMonths = 3)
+
+        assertTrue(embeddings.sentTexts.isEmpty())
     }
 
     private companion object {
