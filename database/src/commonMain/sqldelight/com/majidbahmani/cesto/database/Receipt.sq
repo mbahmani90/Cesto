@@ -51,6 +51,9 @@ UPDATE receipt
 SET text = ?, purchased_at = ?, total_cents = ?, receipt_number = ?, atcud = ?, status = 'TEXT_EXTRACTED'
 WHERE id = ?;
 
+markReady:
+UPDATE receipt SET status = 'READY' WHERE id = ?;
+
 updateStatus:
 UPDATE receipt SET status = ? WHERE id = ?;
 

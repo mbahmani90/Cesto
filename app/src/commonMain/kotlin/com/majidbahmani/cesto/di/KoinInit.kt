@@ -3,6 +3,7 @@ package com.majidbahmani.cesto.di
 import com.majidbahmani.cesto.core.di.dispatchersModule
 import com.majidbahmani.cesto.core.di.networkModule
 import com.majidbahmani.cesto.database.di.databaseModule
+import com.majidbahmani.cesto.feature.chat.di.chatModule
 import com.majidbahmani.cesto.feature.onboarding.di.onboardingModule
 import com.majidbahmani.cesto.feature.receipts.di.receiptsModule
 import com.majidbahmani.cesto.feature.settings.di.settingsModule
@@ -23,6 +24,7 @@ internal val appModules = listOf(
     onboardingModule,
     receiptsModule,
     settingsModule,
+    chatModule,
 )
 
 /** Bindings created by the platform apps before Koin starts (they need the platform SDKs). */

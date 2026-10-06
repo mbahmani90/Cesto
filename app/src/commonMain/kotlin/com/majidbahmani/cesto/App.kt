@@ -81,7 +81,7 @@ fun App() {
                     // Demo: back returns to onboarding to connect Gmail for real.
                     onTryDemo = { navController.navigate(ReceiptsRoute(demo = true)) },
                 )
-                chatScreen(contentPadding)
+                chatScreen(onOpenSettings = { navController.navigateToTab(TopLevelDestination.SETTINGS) }, contentPadding = contentPadding)
                 receiptsScreen(contentPadding)
                 settingsScreen(contentPadding)
             }

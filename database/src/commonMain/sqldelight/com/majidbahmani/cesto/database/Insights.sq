@@ -1,0 +1,97 @@
+-- Read-only queries behind the chat's tools. The LLM never writes SQL: it calls a tool with arguments,
+-- the app runs one of these. Time ranges use the purchase time (or the email time until it's known).
+
+-- findProducts: one keyword at a time (lower-case LIKE pattern), merged in Kotlin.
+searchProducts:
+SELECT id, raw_name, normalized_name, category, units_per_pack
+FROM product
+WHERE lower(normalized_name) LIKE :pattern OR lower(raw_name) LIKE :pattern OR lower(coalesce(category, '')) LIKE :pattern
+ORDER BY normalized_name
+LIMIT 50;
+
+-- sumQuantity: per product and unit (units vs kg).
+quantityByProduct:
+SELECT ri.product_id, p.normalized_name, ri.unit,
+       SUM(ri.quantity) AS quantity,
+       SUM(CASE WHEN ri.unit = 'UNIT' THEN ri.quantity * p.units_per_pack ELSE 0 END) AS single_units,
+       COUNT(DISTINCT ri.receipt_id) AS receipts
+FROM receipt_item ri
+JOIN receipt r ON r.id = ri.receipt_id
+JOIN product p ON p.id = ri.product_id
+WHERE ri.product_id IN :productIds
+  AND coalesce(r.purchased_at, r.received_at) BETWEEN :fromMillis AND :toMillis
+GROUP BY ri.product_id, ri.unit
+ORDER BY p.normalized_name;
+
+-- sumSpending for some products.
+spendingByProduct:
+SELECT ri.product_id, p.normalized_name, SUM(ri.line_total_cents) AS cents, COUNT(DISTINCT ri.receipt_id) AS receipts
+FROM receipt_item ri
+JOIN receipt r ON r.id = ri.receipt_id
+JOIN product p ON p.id = ri.product_id
+WHERE ri.product_id IN :productIds
+  AND coalesce(r.purchased_at, r.received_at) BETWEEN :fromMillis AND :toMillis
+GROUP BY ri.product_id
+ORDER BY cents DESC;
+
+-- sumSpending for everything: what was paid (TOTAL A PAGAR), also for receipts whose items aren't extracted yet.
+totalSpending:
+SELECT CAST(coalesce(SUM(total_cents), 0) AS INTEGER) AS cents, COUNT(*) AS receipts
+FROM receipt
+WHERE total_cents IS NOT NULL
+  AND coalesce(purchased_at, received_at) BETWEEN :fromMillis AND :toMillis;
+
+topProductsByQuantity:
+SELECT p.id, p.normalized_name,
+       SUM(CASE WHEN ri.unit = 'UNIT' THEN ri.quantity * p.units_per_pack ELSE ri.quantity END) AS amount,
+       SUM(ri.line_total_cents) AS cents
+FROM receipt_item ri
+JOIN receipt r ON r.id = ri.receipt_id
+JOIN product p ON p.id = ri.product_id
+WHERE coalesce(r.purchased_at, r.received_at) BETWEEN :fromMillis AND :toMillis
+GROUP BY p.id
+ORDER BY amount DESC
+LIMIT :limit;
+
+topProductsBySpending:
+SELECT p.id, p.normalized_name,
+       SUM(CASE WHEN ri.unit = 'UNIT' THEN ri.quantity * p.units_per_pack ELSE ri.quantity END) AS amount,
+       SUM(ri.line_total_cents) AS cents
+FROM receipt_item ri
+JOIN receipt r ON r.id = ri.receipt_id
+JOIN product p ON p.id = ri.product_id
+WHERE coalesce(r.purchased_at, r.received_at) BETWEEN :fromMillis AND :toMillis
+GROUP BY p.id
+ORDER BY cents DESC
+LIMIT :limit;
+
+-- The receipts behind an answer (links under the answer).
+receiptIdsWithProducts:
+SELECT DISTINCT r.id
+FROM receipt r
+JOIN receipt_item ri ON ri.receipt_id = r.id
+WHERE ri.product_id IN :productIds
+  AND coalesce(r.purchased_at, r.received_at) BETWEEN :fromMillis AND :toMillis
+ORDER BY coalesce(r.purchased_at, r.received_at) DESC
+LIMIT 50;
+
+listReceipts:
+SELECT r.id, coalesce(r.purchased_at, r.received_at) AS at, r.total_cents, r.status,
+       (SELECT COUNT(*) FROM receipt_item ri WHERE ri.receipt_id = r.id AND ri.kind = 'ITEM') AS items
+FROM receipt r
+WHERE coalesce(r.purchased_at, r.received_at) BETWEEN :fromMillis AND :toMillis
+ORDER BY at DESC
+LIMIT 50;
+
+-- Context for the system prompt: which period the data covers.
+dataRange:
+SELECT min(coalesce(purchased_at, received_at)) AS first, max(coalesce(purchased_at, received_at)) AS last,
+       COUNT(*) AS receipts, CAST(coalesce(SUM(status = 'READY'), 0) AS INTEGER) AS ready
+FROM receipt;
+
+-- Receipts in a period whose items aren't read yet: answers about items may be incomplete.
+receiptsWithoutItems:
+SELECT COUNT(*)
+FROM receipt
+WHERE status != 'READY'
+  AND coalesce(purchased_at, received_at) BETWEEN :fromMillis AND :toMillis;

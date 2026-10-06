@@ -65,7 +65,23 @@ class MigrationTest {
     }
 
     @Test
-    fun schemaVersion_is2() {
-        assertEquals(2, CestoDatabase.Schema.version)
+    fun version1To3_addsItemsAndProducts() {
+        createVersion1()
+
+        CestoDatabase.Schema.migrate(driver, oldVersion = 1, newVersion = CestoDatabase.Schema.version)
+        val database = CestoDatabase(driver)
+        val receiptId = database.receiptQueries.selectAll().executeAsOne().id
+
+        database.productQueries.insertIfNew("IOG GREGO NAT 4X125G", "Iogurte grego natural 4x125 g", "Laticinios", 4)
+        val productId = database.productQueries.idByRawName("IOG GREGO NAT 4X125G").executeAsOne()
+        database.receiptItemQueries.insert(receiptId, 0, "ITEM", productId, "IOG GREGO NAT 4X125G", 1.0, "UNIT", 249, 249)
+
+        assertEquals(1, database.receiptItemQueries.selectByReceipt(receiptId).executeAsList().size)
+        assertEquals("DOWNLOADED", database.receiptQueries.selectAll().executeAsOne().status) // untouched
+    }
+
+    @Test
+    fun schemaVersion_is3() {
+        assertEquals(3, CestoDatabase.Schema.version)
     }
 }

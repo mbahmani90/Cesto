@@ -1,0 +1,38 @@
+-- One row per line of a receipt (migration 2.sqm): the table that grows to 10,000+ rows.
+CREATE TABLE receipt_item (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    receipt_id INTEGER NOT NULL REFERENCES receipt(id) ON DELETE CASCADE,
+    -- Order on the receipt, from 0.
+    line_number INTEGER NOT NULL,
+    -- ITEM (a product), DEPOSIT (bottle deposit) or DISCOUNT (negative line).
+    kind TEXT NOT NULL,
+    -- Only for ITEM.
+    product_id INTEGER REFERENCES product(id),
+    raw_name TEXT NOT NULL,
+    -- Units (6) or kilograms (0.760).
+    quantity REAL NOT NULL,
+    -- UNIT or KG.
+    unit TEXT NOT NULL,
+    unit_price_cents INTEGER,
+    line_total_cents INTEGER NOT NULL
+);
+
+CREATE INDEX receipt_item_receipt ON receipt_item(receipt_id);
+CREATE INDEX receipt_item_product ON receipt_item(product_id);
+
+insert:
+INSERT INTO receipt_item(receipt_id, line_number, kind, product_id, raw_name, quantity, unit, unit_price_cents, line_total_cents)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- Extracting a receipt again replaces its lines.
+deleteByReceipt:
+DELETE FROM receipt_item WHERE receipt_id = ?;
+
+selectByReceipt:
+SELECT * FROM receipt_item WHERE receipt_id = ? ORDER BY line_number;
+
+count:
+SELECT COUNT(*) FROM receipt_item;
+
+deleteAll:
+DELETE FROM receipt_item;
