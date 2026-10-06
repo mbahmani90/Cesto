@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="980" height="800" viewBox="0 0 980 800" role="img" aria-labelledby="title desc">
   <title id="title">Cesto module architecture</title>
-  <desc id="desc">Platform shells androidApp and iosApp depend on the :app composition root, which depends on the feature modules onboarding, chat, receipts and settings and on the shared modules gmail-auth, systemdesign, core and database. Both platform apps implement the GmailAuthorizer interface from gmail-auth.</desc>
+  <desc id="desc">Platform shells androidApp and iosApp depend on the :app composition root, which depends on the feature modules onboarding, chat, receipts and settings and on the shared modules systemdesign, gmail-auth, database, core and llm. Both platform apps implement the GmailAuthorizer interface from gmail-auth.</desc>
   <style>
     text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; fill: #1c1c1c; }
     .bg { fill: #ffffff; }
@@ -39,14 +39,18 @@
   <path class="dep" d="M570,290 L600,368" marker-end="url(#arrow)"/>
   <path class="dep" d="M680,290 L820,368" marker-end="url(#arrow)"/>
   <!-- :feature:onboarding -> :gmail-auth -->
-  <path class="dep" d="M200,460 L320,568" marker-end="url(#arrow)"/>
-  <!-- :feature:receipts -> :gmail-auth, :core, :database -->
-  <path class="dep" d="M540,460 L430,568" marker-end="url(#arrow)"/>
-  <path class="dep" d="M600,460 L590,568" marker-end="url(#arrow)"/>
-  <path class="dep" d="M660,460 L780,568" marker-end="url(#arrow)"/>
+  <path class="dep" d="M180,460 L260,568" marker-end="url(#arrow)"/>
+  <!-- :feature:receipts -> :gmail-auth, :database, :core -->
+  <path class="dep" d="M520,460 L330,568" marker-end="url(#arrow)"/>
+  <path class="dep" d="M580,460 L500,568" marker-end="url(#arrow)"/>
+  <path class="dep" d="M650,460 L640,568" marker-end="url(#arrow)"/>
+  <!-- :feature:settings -> :llm -->
+  <path class="dep" d="M830,460 L832,568" marker-end="url(#arrow)"/>
+  <!-- :llm -> :core (HttpClient) -->
+  <path class="dep" d="M750,615 L739,615" marker-end="url(#arrow)"/>
   <!-- platform apps implement GmailAuthorizer -->
-  <path class="impl" d="M90,85 L14,85 L14,712 L300,712 L300,662" marker-end="url(#arrow-impl)"/>
-  <path class="impl" d="M890,85 L964,85 L964,712 L420,712 L420,662" marker-end="url(#arrow-impl)"/>
+  <path class="impl" d="M90,85 L14,85 L14,712 L250,712 L250,662" marker-end="url(#arrow-impl)"/>
+  <path class="impl" d="M890,85 L964,85 L964,712 L330,712 L330,662" marker-end="url(#arrow-impl)"/>
 
   <!-- Platform shells -->
   <rect class="shell" x="90" y="40" width="320" height="90" rx="12"/>
@@ -85,29 +89,34 @@
 
   <rect class="feature" x="718" y="370" width="200" height="90" rx="12"/>
   <text class="h" x="734" y="398">:feature:settings</text>
-  <text class="t" x="734" y="422">Settings tab</text>
-  <text class="t" x="734" y="442">placeholder for now</text>
+  <text class="t" x="734" y="422">Gemini key: 2 steps</text>
+  <text class="t" x="734" y="442">test · save · remove</text>
 
   <!-- Shared modules -->
-  <rect class="shared" x="30" y="570" width="210" height="90" rx="12"/>
-  <text class="h" x="46" y="598">:systemdesign</text>
-  <text class="t" x="46" y="622">CestoTheme (light + dark)</text>
-  <text class="t" x="46" y="642">CestoScreenTitle</text>
+  <rect class="shared" x="30" y="570" width="166" height="90" rx="12"/>
+  <text class="h" x="44" y="598">:systemdesign</text>
+  <text class="t" x="44" y="622">CestoTheme</text>
+  <text class="t" x="44" y="642">CestoScreenTitle</text>
 
-  <rect class="shared" x="256" y="570" width="210" height="90" rx="12"/>
-  <text class="h" x="272" y="598">:gmail-auth</text>
-  <text class="t" x="272" y="622">GmailAuthorizer interface</text>
-  <text class="t" x="272" y="642">requestAccess() · no deps</text>
+  <rect class="shared" x="210" y="570" width="166" height="90" rx="12"/>
+  <text class="h" x="224" y="598">:gmail-auth</text>
+  <text class="t" x="224" y="622">GmailAuthorizer</text>
+  <text class="t" x="224" y="642">requestAccess()</text>
 
-  <rect class="shared" x="482" y="570" width="210" height="90" rx="12"/>
-  <text class="h" x="498" y="598">:core</text>
-  <text class="t" x="498" y="622">Ktor HttpClient + Koin</text>
-  <text class="t" x="498" y="642">dispatchers · logWarning</text>
+  <rect class="shared" x="390" y="570" width="166" height="90" rx="12"/>
+  <text class="h" x="404" y="598">:database</text>
+  <text class="t" x="404" y="622">SQLDelight</text>
+  <text class="t" x="404" y="642">receipts + text</text>
 
-  <rect class="shared" x="708" y="570" width="210" height="90" rx="12"/>
-  <text class="h" x="724" y="598">:database</text>
-  <text class="t" x="724" y="622">SQLDelight · cesto.db</text>
-  <text class="t" x="724" y="642">receipt · gmail_message</text>
+  <rect class="shared" x="570" y="570" width="166" height="90" rx="12"/>
+  <text class="h" x="584" y="598">:core</text>
+  <text class="t" x="584" y="622">Ktor HttpClient</text>
+  <text class="t" x="584" y="642">dispatchers · logs</text>
+
+  <rect class="shared" x="750" y="570" width="166" height="90" rx="12"/>
+  <text class="h" x="764" y="598">:llm</text>
+  <text class="t" x="764" y="622">Gemini REST client</text>
+  <text class="t" x="764" y="642">key in Keystore</text>
 
   <!-- Layer labels -->
   <rect class="bg" x="417" y="14" width="146" height="20"/>

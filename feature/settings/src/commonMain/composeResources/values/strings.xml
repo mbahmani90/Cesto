@@ -1,4 +1,36 @@
 <resources>
     <string name="settings_title">Settings</string>
-    <string name="settings_placeholder">Here you’ll set up your Gemini key in two steps: create a Google Cloud project, then create the key in Google AI Studio.</string>
+
+    <string name="settings_gemini_title">Gemini</string>
+    <string name="settings_gemini_intro">Cesto uses Google’s Gemini with your own API key to read the items on your receipts and answer your questions. The key is stored encrypted on this phone and only sent to Google.</string>
+
+    <string name="settings_account_label">Google account for the key (optional)</string>
+    <string name="settings_account_hint">The two steps below open with this account. It can be different from your Gmail account. Leave it empty to use the account signed in in your browser.</string>
+    <string name="settings_account_invalid">This doesn’t look like an email address; the steps open with the account signed in in your browser.</string>
+
+    <string name="settings_step1_title">Create a Google Cloud project</string>
+    <string name="settings_step1_text">Create a new project (or pick one you have). Turn on billing for it: on the free tier, Google may use what you send to improve its products, and that would include your receipts.</string>
+    <string name="settings_step1_button">Open Google Cloud</string>
+
+    <string name="settings_step2_title">Create the key in Google AI Studio</string>
+    <string name="settings_step2_text">Choose your project, create an API key and copy it. Then paste it below.</string>
+    <string name="settings_step2_button">Open Google AI Studio</string>
+
+    <string name="settings_key_label">Gemini API key</string>
+    <string name="settings_key_show">Show</string>
+    <string name="settings_key_hide">Hide</string>
+    <string name="settings_test_and_save">Test and save</string>
+    <string name="settings_cancel">Cancel</string>
+
+    <string name="settings_saved_key">Your key</string>
+    <string name="settings_saved_key_working">Saved and working</string>
+    <string name="settings_change">Change</string>
+    <string name="settings_remove">Remove</string>
+
+    <string name="settings_result_saved">Key works and is saved.</string>
+    <string name="settings_result_empty">Paste your key first.</string>
+    <string name="settings_result_invalid">Google says this isn’t a valid API key. Copy it again from Google AI Studio.</string>
+    <string name="settings_result_not_allowed">The key works, but its project can’t use the Gemini API yet. Check in Google AI Studio that the key belongs to the right project.</string>
+    <string name="settings_result_no_connection">Couldn’t reach Google. Check your internet connection and try again.</string>
+    <string name="settings_result_failed">Google couldn’t check the key right now. Try again in a minute.</string>
 </resources>
