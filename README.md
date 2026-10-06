@@ -1,5 +1,7 @@
 # Cesto
 
+[![CI](https://github.com/mbahmani90/Cesto/actions/workflows/ci.yml/badge.svg)](https://github.com/mbahmani90/Cesto/actions/workflows/ci.yml)
+
 **Ask your grocery receipts anything.**
 
 Cesto is a Kotlin Multiplatform app (Android + iOS) that finds your **Continente** grocery receipts in
@@ -188,6 +190,11 @@ onboarding repository and ViewModel, the Gmail REST client (`MockEngine`) and me
 database schema, migrations and queries (in-memory SQLite), item extraction, the agent loop (scripted fake
 model), the SQL tools, product vectors and semantic search, the Gemini request/response mapping, the ViewModels, the HTTP client, and the Koin
 graph (`AppModulesTest`, because Koin only reports missing bindings at runtime).
+
+**CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)): every PR and every push to `main` runs the
+Android tests and builds the debug APK (uploaded with the test reports). No secrets are needed: CI never
+calls Gmail or Gemini. Changes to Markdown, `art/` or the license skip the build; one **CI result** check
+sums it up for branch protection. The iOS tests run locally for now.
 
 ## Design decisions
 
