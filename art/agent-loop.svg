@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="900" viewBox="0 0 1000 900" role="img" aria-labelledby="title desc">
+  <title id="title">Cesto agent loop: answering a question with tools</title>
+  <desc id="desc">Sequence: the user asks how many yogurts they bought last month. The app sends the question and tool definitions to the LLM. The LLM calls findProducts; the app searches the product table on the phone and returns a short list. The LLM calls sumQuantity; the app sums receipt items with SQL and returns the counts. The LLM answers without a tool call, which ends the loop. Receipt text never goes to the LLM.</desc>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; fill: #1c1c1c; }
+    .bg { fill: #ffffff; }
+    .h { font-size: 15px; font-weight: 700; }
+    .sub { font-size: 11.5px; fill: #4a4a4a; }
+    .msg { font-size: 12.5px; }
+    .code { font-size: 12px; font-family: "SF Mono", Menlo, Consolas, monospace; fill: #1c1c1c; }
+    .result { font-size: 12px; font-family: "SF Mono", Menlo, Consolas, monospace; fill: #4a4a4a; }
+    .note { font-size: 11.5px; fill: #4a4a4a; font-style: italic; }
+    .user { fill: #f2f2f2; stroke: #cacaca; }
+    .app { fill: #1e7a4f; stroke: #1e7a4f; }
+    .app-text .h, .app-text .sub { fill: #ffffff; }
+    .db { fill: #cdefd9; stroke: #8fcfa9; }
+    .llm { fill: #fff8e1; stroke: #d9a400; }
+    .phone { fill: none; stroke: #1e7a4f; stroke-dasharray: 5 4; }
+    .label-bg { fill: #ffffff; }
+    .phone-label { font-size: 11.5px; font-weight: 700; fill: #1e7a4f; letter-spacing: 0.06em; }
+    .lifeline { stroke: #b5b5b5; stroke-width: 1.2; stroke-dasharray: 4 4; }
+    .call { fill: none; stroke: #4a4a4a; stroke-width: 1.6; }
+    .reply { fill: none; stroke: #4a4a4a; stroke-width: 1.4; stroke-dasharray: 6 4; }
+    .tip { fill: #4a4a4a; }
+    .loop { fill: none; stroke: #d9a400; stroke-width: 1.4; }
+    .loop-tag { fill: #d9a400; }
+    .loop-label { font-size: 11.5px; font-weight: 700; fill: #ffffff; }
+    .step { fill: #1e7a4f; }
+    .step-text { font-size: 10.5px; font-weight: 700; fill: #ffffff; }
+    .box-ok { fill: #f4fbf7; stroke: #8fcfa9; }
+    .box-no { fill: #fdf0ef; stroke: #e3a39c; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path class="tip" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1000" height="900"/>
+
+  <!-- "On the phone" region around the app and the database -->
+  <rect class="phone" x="250" y="14" width="470" height="726" rx="14"/>
+  <text class="phone-label" x="266" y="732">ON THE PHONE</text>
+
+  <!-- Participants -->
+  <rect class="user" x="40" y="30" width="160" height="56" rx="10"/>
+  <text class="h" x="120" y="55" text-anchor="middle">You</text>
+  <text class="sub" x="120" y="73" text-anchor="middle">chat screen</text>
+
+  <rect class="app" x="290" y="30" width="160" height="56" rx="10"/>
+  <g class="app-text">
+    <text class="h" x="370" y="55" text-anchor="middle">Cesto app</text>
+    <text class="sub" x="370" y="73" text-anchor="middle">agent loop + tools</text>
+  </g>
+
+  <rect class="db" x="530" y="30" width="170" height="56" rx="10"/>
+  <text class="h" x="615" y="55" text-anchor="middle">Local database</text>
+  <text class="sub" x="615" y="73" text-anchor="middle">product · receipt_item</text>
+
+  <rect class="llm" x="790" y="30" width="170" height="56" rx="10"/>
+  <text class="h" x="875" y="55" text-anchor="middle">LLM</text>
+  <text class="sub" x="875" y="73" text-anchor="middle">cloud, via AWS proxy</text>
+
+  <!-- Lifelines -->
+  <line class="lifeline" x1="120" y1="86" x2="120" y2="720"/>
+  <line class="lifeline" x1="370" y1="86" x2="370" y2="720"/>
+  <line class="lifeline" x1="615" y1="86" x2="615" y2="720"/>
+  <line class="lifeline" x1="875" y1="86" x2="875" y2="720"/>
+
+  <!-- Loop frame around rounds -->
+  <rect class="loop" x="270" y="176" width="710" height="468" rx="8"/>
+  <rect class="loop-tag" x="270" y="176" width="190" height="22" rx="4"/>
+  <text class="loop-label" x="280" y="192">LOOP · max 5 rounds</text>
+
+  <!-- 1 question -->
+  <circle class="step" cx="140" cy="122" r="9"/><text class="step-text" x="140" y="126" text-anchor="middle">1</text>
+  <rect class="label-bg" x="152" y="114" width="122" height="16" rx="2"/>
+  <text class="msg" x="156" y="126">"How many yogurts</text>
+  <rect class="label-bg" x="152" y="129" width="155" height="16" rx="2"/>
+  <text class="msg" x="156" y="141">did I buy last month?"</text>
+  <path class="call" d="M120,152 L366,152" marker-end="url(#arrow)"/>
+
+  <!-- 2 to LLM -->
+  <circle class="step" cx="470" cy="214" r="9"/><text class="step-text" x="470" y="218" text-anchor="middle">2</text>
+  <rect class="label-bg" x="482" y="206" width="350" height="16" rx="2"/>
+  <text class="msg" x="486" y="218">question + tool definitions + "today is 06/10/2026"</text>
+  <path class="call" d="M370,228 L871,228" marker-end="url(#arrow)"/>
+
+  <!-- 3 LLM calls findProducts -->
+  <circle class="step" cx="470" cy="256" r="9"/><text class="step-text" x="470" y="260" text-anchor="middle">3</text>
+  <rect class="label-bg" x="482" y="248" width="319" height="16" rx="2"/>
+  <text class="code" x="486" y="260">findProducts(["iogurte", "yogurt", "iog"])</text>
+  <path class="call" d="M875,270 L374,270" marker-end="url(#arrow)"/>
+
+  <!-- 4 SQL search -->
+  <circle class="step" cx="390" cy="298" r="9"/><text class="step-text" x="390" y="302" text-anchor="middle">4</text>
+  <rect class="label-bg" x="402" y="290" width="122" height="16" rx="2"/>
+  <text class="msg" x="406" y="302">SQL: search names</text>
+  <path class="call" d="M370,312 L611,312" marker-end="url(#arrow)"/>
+
+  <!-- 5 result -->
+  <rect class="label-bg" x="384" y="324" width="178" height="16" rx="2"/>
+  <text class="result" x="388" y="336">12 Iogurte grego 4×125g</text>
+  <rect class="label-bg" x="384" y="339" width="141" height="16" rx="2"/>
+  <text class="result" x="388" y="351">15 Iogurte morango</text>
+  <rect class="label-bg" x="384" y="354" width="141" height="16" rx="2"/>
+  <text class="result" x="388" y="366">21 Iogurte líquido</text>
+  <path class="reply" d="M615,378 L374,378" marker-end="url(#arrow)"/>
+
+  <!-- 6 back to LLM -->
+  <circle class="step" cx="470" cy="404" r="9"/><text class="step-text" x="470" y="408" text-anchor="middle">5</text>
+  <rect class="label-bg" x="482" y="396" width="256" height="16" rx="2"/>
+  <text class="msg" x="486" y="408">conversation so far + this short list</text>
+  <path class="call" d="M370,418 L871,418" marker-end="url(#arrow)"/>
+
+  <!-- 7 LLM decides sumQuantity -->
+  <circle class="step" cx="470" cy="446" r="9"/><text class="step-text" x="470" y="450" text-anchor="middle">6</text>
+  <rect class="label-bg" x="482" y="438" width="260" height="16" rx="2"/>
+  <text class="code" x="486" y="450">sumQuantity([12, 15], 01/09–30/09)</text>
+  <rect class="label-bg" x="482" y="454" width="206" height="16" rx="2"/>
+  <text class="note" x="486" y="466">LLM drops 21: a drinkable yogurt</text>
+  <path class="call" d="M875,478 L374,478" marker-end="url(#arrow)"/>
+
+  <!-- 8 SQL sum -->
+  <circle class="step" cx="390" cy="506" r="9"/><text class="step-text" x="390" y="510" text-anchor="middle">7</text>
+  <rect class="label-bg" x="402" y="498" width="135" height="16" rx="2"/>
+  <text class="msg" x="406" y="510">SQL: SUM(quantity ×</text>
+  <rect class="label-bg" x="402" y="513" width="108" height="16" rx="2"/>
+  <text class="msg" x="406" y="525">units_per_pack)</text>
+  <path class="call" d="M370,536 L611,536" marker-end="url(#arrow)"/>
+
+  <!-- 9 sum result -->
+  <rect class="label-bg" x="384" y="548" width="200" height="16" rx="2"/>
+  <text class="result" x="388" y="560">12: 12 units · 15: 2 units</text>
+  <rect class="label-bg" x="384" y="563" width="149" height="16" rx="2"/>
+  <text class="result" x="388" y="575">receipts 31, 38, 42</text>
+  <path class="reply" d="M615,586 L374,586" marker-end="url(#arrow)"/>
+
+  <!-- 10 back to LLM -->
+  <circle class="step" cx="470" cy="612" r="9"/><text class="step-text" x="470" y="616" text-anchor="middle">8</text>
+  <rect class="label-bg" x="482" y="604" width="242" height="16" rx="2"/>
+  <text class="msg" x="486" y="616">conversation so far + these numbers</text>
+  <path class="call" d="M370,626 L871,626" marker-end="url(#arrow)"/>
+
+  <!-- 11 final text: loop stops -->
+  <circle class="step" cx="470" cy="676" r="9"/><text class="step-text" x="470" y="680" text-anchor="middle">9</text>
+  <rect class="label-bg" x="482" y="668" width="256" height="16" rx="2"/>
+  <text class="msg" x="486" y="680">final text, no tool call → loop stops</text>
+  <path class="reply" d="M875,692 L374,692" marker-end="url(#arrow)"/>
+
+  <!-- 12 answer to user -->
+  <rect class="label-bg" x="130" y="652" width="176" height="16" rx="2"/>
+  <text class="msg" x="134" y="664">"14 yogurts in September:</text>
+  <rect class="label-bg" x="130" y="667" width="169" height="16" rx="2"/>
+  <text class="msg" x="134" y="679">12 Greek + 2 strawberry"</text>
+  <rect class="label-bg" x="130" y="682" width="194" height="16" rx="2"/>
+  <text class="note" x="134" y="694">+ links to receipts 31, 38, 42</text>
+  <path class="reply" d="M366,708 L124,708" marker-end="url(#arrow)"/>
+
+  <!-- What the LLM sees / never sees -->
+  <rect class="box-ok" x="40" y="764" width="450" height="100" rx="10"/>
+  <text class="h" x="58" y="790">Sent to the LLM (small, every round)</text>
+  <text class="msg" x="58" y="812">· the question and the tool definitions</text>
+  <text class="msg" x="58" y="831">· short tool results: ids, names, numbers</text>
+  <text class="msg" x="58" y="850">· resent each round: the LLM is stateless</text>
+
+  <rect class="box-no" x="510" y="764" width="450" height="100" rx="10"/>
+  <text class="h" x="528" y="790">Never sent when you ask</text>
+  <text class="msg" x="528" y="812">· receipt text, PDFs, emails, the database</text>
+  <text class="msg" x="528" y="831">· NIF and card data</text>
+  <text class="msg" x="528" y="850">· counting: SQL does the math, not the LLM</text>
+
+  <text class="note" x="40" y="888">Solid arrow: request / tool call · dashed arrow: result. Tables are filled once, beforehand, by LLM extraction of each receipt's text.</text>
+</svg>

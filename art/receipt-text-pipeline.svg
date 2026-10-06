@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="760" viewBox="0 0 1000 760" role="img" aria-labelledby="title desc">
+  <title id="title">Cesto receipt text pipeline (planned)</title>
+  <desc id="desc">Layers for PDF to text: the receipts screen and ViewModel call the sync use case; the repository implementation coordinates Gmail download, file storage, PDF text extraction, Continente parsing and saving to the database. PDF text extraction is implemented per platform with PdfBox-Android and PDFKit.</desc>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; fill: #1c1c1c; }
+    .bg { fill: #ffffff; }
+    .band { fill: #f7f7f7; stroke: #e2e2e2; }
+    .band-label { font-size: 11.5px; font-weight: 700; fill: #4a4a4a; letter-spacing: 0.08em; }
+    .h { font-size: 14px; font-weight: 700; }
+    .t { font-size: 11.5px; fill: #4a4a4a; }
+    .note { font-size: 11.5px; fill: #4a4a4a; font-style: italic; }
+    .ui { fill: #ffffff; stroke: #9a9a9a; }
+    .domain { fill: #cdefd9; stroke: #8fcfa9; }
+    .coord { fill: #1e7a4f; stroke: #1e7a4f; }
+    .coord-text .h, .coord-text .t { fill: #ffffff; }
+    .data { fill: #ffffff; stroke: #1e7a4f; stroke-width: 1.4; }
+    .new { fill: #fff8e1; stroke: #d9a400; stroke-width: 1.4; }
+    .platform { fill: #f2f2f2; stroke: #cacaca; }
+    .dep { fill: none; stroke: #7a7a7a; stroke-width: 1.5; }
+    .impl { fill: none; stroke: #1e7a4f; stroke-width: 1.5; stroke-dasharray: 6 5; }
+    .tip { fill: #7a7a7a; }
+    .tip-impl { fill: #1e7a4f; }
+    .step { fill: #1e7a4f; }
+    .step-text { font-size: 11px; font-weight: 700; fill: #ffffff; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path class="tip" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+    <marker id="arrow-impl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path class="tip-impl" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1000" height="760"/>
+
+  <!-- Layer bands -->
+  <rect class="band" x="10" y="10" width="980" height="120" rx="10"/>
+  <text class="band-label" x="24" y="30">PRESENTATION</text>
+  <rect class="band" x="10" y="142" width="980" height="120" rx="10"/>
+  <text class="band-label" x="24" y="162">DOMAIN</text>
+  <rect class="band" x="10" y="274" width="980" height="272" rx="10"/>
+  <text class="band-label" x="24" y="294">DATA (commonMain)</text>
+  <rect class="band" x="10" y="558" width="980" height="122" rx="10"/>
+  <text class="band-label" x="24" y="578">PLATFORM (androidMain / iosMain) · :database</text>
+
+  <!-- Arrows (drawn before boxes) -->
+  <!-- screen -> view model -->
+  <path class="dep" d="M460,80 L538,80" marker-end="url(#arrow)"/>
+  <!-- view model -> use case -->
+  <path class="dep" d="M650,110 L650,188" marker-end="url(#arrow)"/>
+  <!-- use case -> repository interface -->
+  <path class="dep" d="M540,218 L462,218" marker-end="url(#arrow)"/>
+  <!-- repository impl implements the interface -->
+  <path class="impl" d="M350,310 L350,250" marker-end="url(#arrow-impl)"/>
+  <text class="t" x="358" y="287">implements</text>
+  <!-- coordinator -> pipeline steps -->
+  <path class="dep" d="M380,370 L115,428" marker-end="url(#arrow)"/>
+  <path class="dep" d="M430,370 L299,428" marker-end="url(#arrow)"/>
+  <path class="dep" d="M500,370 L483,428" marker-end="url(#arrow)"/>
+  <path class="dep" d="M570,370 L667,428" marker-end="url(#arrow)"/>
+  <path class="dep" d="M620,370 L851,428" marker-end="url(#arrow)"/>
+  <!-- platform extractors implement PdfTextExtractor -->
+  <path class="impl" d="M380,600 L440,522" marker-end="url(#arrow-impl)"/>
+  <path class="impl" d="M600,600 L530,522" marker-end="url(#arrow-impl)"/>
+  <!-- local data source -> database -->
+  <path class="dep" d="M851,522 L851,598" marker-end="url(#arrow)"/>
+
+  <!-- Presentation -->
+  <rect class="ui" x="240" y="45" width="220" height="70" rx="10"/>
+  <text class="h" x="256" y="70">ReceiptsScreen</text>
+  <text class="t" x="256" y="90">date · total · status per receipt</text>
+  <text class="t" x="256" y="106">pull to refresh</text>
+
+  <rect class="ui" x="540" y="45" width="220" height="70" rx="10"/>
+  <text class="h" x="556" y="70">ReceiptsViewModel</text>
+  <text class="t" x="556" y="90">observes the list, starts the sync</text>
+  <text class="t" x="556" y="106">no PDF or Gmail knowledge</text>
+
+  <!-- Domain -->
+  <rect class="domain" x="240" y="185" width="220" height="68" rx="10"/>
+  <text class="h" x="256" y="210">ReceiptRepository</text>
+  <text class="t" x="256" y="230">interface: observeReceipts()</text>
+  <text class="t" x="256" y="245">sync(lookBackMonths)</text>
+
+  <rect class="domain" x="540" y="185" width="220" height="68" rx="10"/>
+  <text class="h" x="556" y="210">SyncReceiptsUseCase</text>
+  <text class="t" x="556" y="230">single entry point of the pipeline</text>
+  <text class="t" x="556" y="245">rule: last 3 months</text>
+
+  <rect class="new" x="780" y="185" width="200" height="68" rx="10"/>
+  <text class="h" x="796" y="210">Receipt (model)</text>
+  <text class="t" x="796" y="230">+ purchasedAtMillis?</text>
+  <text class="t" x="796" y="245">+ totalCents?</text>
+
+  <!-- Coordinator -->
+  <rect class="coord" x="340" y="310" width="320" height="60" rx="10"/>
+  <g class="coord-text">
+    <text class="h" x="356" y="334">ReceiptRepositoryImpl (coordinator)</text>
+    <text class="t" x="356" y="354">FOUND → DOWNLOADED → TEXT_EXTRACTED</text>
+  </g>
+
+  <!-- Pipeline steps -->
+  <rect class="data" x="30" y="430" width="170" height="92" rx="10"/>
+  <circle class="step" cx="48" cy="450" r="10"/><text class="step-text" x="48" y="454" text-anchor="middle">1</text>
+  <text class="h" x="64" y="455">GmailApi</text>
+  <text class="t" x="44" y="478">messages.get</text>
+  <text class="t" x="44" y="494">attachments.get (Ktor)</text>
+  <text class="t" x="44" y="510">→ PDF bytes</text>
+
+  <rect class="data" x="214" y="430" width="170" height="92" rx="10"/>
+  <circle class="step" cx="232" cy="450" r="10"/><text class="step-text" x="232" y="454" text-anchor="middle">2</text>
+  <text class="h" x="248" y="455">ReceiptFileStore</text>
+  <text class="t" x="228" y="478">app-private, no backup</text>
+  <text class="t" x="228" y="494">→ relative path</text>
+
+  <rect class="new" x="398" y="430" width="170" height="92" rx="10"/>
+  <circle class="step" cx="416" cy="450" r="10"/><text class="step-text" x="416" y="454" text-anchor="middle">3</text>
+  <text class="h" x="432" y="455">PdfTextExtractor</text>
+  <text class="t" x="412" y="478">interface</text>
+  <text class="t" x="412" y="494">PDF file → plain text</text>
+  <text class="t" x="412" y="510">Dispatchers.Default</text>
+
+  <rect class="new" x="582" y="430" width="170" height="92" rx="10"/>
+  <circle class="step" cx="600" cy="450" r="10"/><text class="step-text" x="600" y="454" text-anchor="middle">4</text>
+  <text class="h" x="616" y="455">ContinenteParser</text>
+  <text class="t" x="596" y="478">pure Kotlin, unit tested</text>
+  <text class="t" x="596" y="494">text → date, total,</text>
+  <text class="t" x="596" y="510">receipt nº, ATCUD</text>
+
+  <rect class="data" x="766" y="430" width="170" height="92" rx="10"/>
+  <circle class="step" cx="784" cy="450" r="10"/><text class="step-text" x="784" y="454" text-anchor="middle">5</text>
+  <text class="h" x="800" y="455">LocalDataSource</text>
+  <text class="t" x="780" y="478">save text + fields</text>
+  <text class="t" x="780" y="494">+ status, one statement</text>
+  <text class="t" x="780" y="510">IO dispatcher</text>
+
+  <!-- Platform -->
+  <rect class="platform" x="250" y="600" width="210" height="64" rx="10"/>
+  <text class="h" x="266" y="624">AndroidPdfTextExtractor</text>
+  <text class="t" x="266" y="645">PdfBox-Android</text>
+
+  <rect class="platform" x="490" y="600" width="210" height="64" rx="10"/>
+  <text class="h" x="506" y="624">IosPdfTextExtractor</text>
+  <text class="t" x="506" y="645">PDFKit (Kotlin/Native, no Swift)</text>
+
+  <rect class="new" x="736" y="600" width="230" height="64" rx="10"/>
+  <text class="h" x="752" y="624">:database · receipt</text>
+  <text class="t" x="752" y="642">+ text, purchased_at, total_cents,</text>
+  <text class="t" x="752" y="657">receipt_number, atcud (1.sqm)</text>
+
+  <!-- Legend -->
+  <path class="dep" d="M30,708 L80,708" marker-end="url(#arrow)"/>
+  <text class="t" x="90" y="712">calls / depends on</text>
+  <path class="impl" d="M220,708 L270,708" marker-end="url(#arrow-impl)"/>
+  <text class="t" x="280" y="712">implements</text>
+  <rect class="new" x="370" y="700" width="22" height="14" rx="3"/>
+  <text class="t" x="400" y="712">new in this step</text>
+  <circle class="step" cx="520" cy="707" r="8"/><text class="step-text" x="520" y="711" text-anchor="middle">1</text>
+  <text class="t" x="534" y="712">order of the steps for each receipt</text>
+  <text class="note" x="30" y="740">Later syncs also pick up receipts still DOWNLOADED (steps 3–5 only). Items and products come with LLM extraction.</text>
+</svg>

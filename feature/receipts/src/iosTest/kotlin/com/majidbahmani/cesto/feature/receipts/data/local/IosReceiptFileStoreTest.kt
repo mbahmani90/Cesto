@@ -43,4 +43,12 @@ class IosReceiptFileStoreTest {
             ?.get(NSURLIsExcludedFromBackupKey) as? NSNumber
         assertTrue(excluded?.boolValue == true)
     }
+
+    @Test
+    fun read_returnsWhatWasSaved() = runTest {
+        val store = IosReceiptFileStore(StandardTestDispatcher(testScheduler))
+        val path = store.save("receipt-2.pdf", "%PDF-1.7 content".encodeToByteArray())
+
+        assertEquals("%PDF-1.7 content", store.read(path).decodeToString())
+    }
 }

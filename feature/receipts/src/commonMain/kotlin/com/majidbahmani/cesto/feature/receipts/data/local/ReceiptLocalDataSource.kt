@@ -4,6 +4,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import com.majidbahmani.cesto.database.CestoDatabase
 import com.majidbahmani.cesto.database.Receipt as ReceiptRow
+import com.majidbahmani.cesto.feature.receipts.data.parser.ParsedReceipt
 import com.majidbahmani.cesto.feature.receipts.data.remote.PdfAttachmentRef
 import com.majidbahmani.cesto.feature.receipts.domain.model.ReceiptStatus
 import kotlinx.coroutines.CoroutineDispatcher
@@ -50,6 +51,18 @@ class ReceiptLocalDataSource(
 
     suspend fun markDownloaded(id: Long, pdfPath: String) = withContext(ioDispatcher) {
         receipts.markDownloaded(pdfPath, id)
+    }
+
+    /** Text and its parsed fields in one statement, status TEXT_EXTRACTED. */
+    suspend fun markTextExtracted(id: Long, text: String, parsed: ParsedReceipt) = withContext(ioDispatcher) {
+        receipts.markTextExtracted(
+            text = text,
+            purchased_at = parsed.purchasedAtMillis,
+            total_cents = parsed.totalCents,
+            receipt_number = parsed.receiptNumber,
+            atcud = parsed.atcud,
+            id = id,
+        )
     }
 
     suspend fun markFailed(id: Long) = withContext(ioDispatcher) {

@@ -2,6 +2,7 @@ package com.majidbahmani.cesto.di
 
 import com.majidbahmani.cesto.feature.onboarding.presentation.viewmodel.OnboardingViewModel
 import com.majidbahmani.cesto.feature.receipts.data.remote.GmailApi
+import com.majidbahmani.cesto.feature.receipts.data.local.PdfTextExtractor
 import com.majidbahmani.cesto.feature.receipts.data.local.ReceiptFileStore
 import com.majidbahmani.cesto.feature.receipts.data.remote.KtorGmailApi
 import com.majidbahmani.cesto.feature.receipts.presentation.viewmodel.ReceiptsViewModel
@@ -34,12 +35,18 @@ class AppModulesTest {
 
     private object UnusedFileStore : ReceiptFileStore {
         override suspend fun save(fileName: String, bytes: ByteArray) = error("not used")
+        override suspend fun read(relativePath: String) = error("not used")
+    }
+
+    private object UnusedExtractor : PdfTextExtractor {
+        override suspend fun extractText(pdf: ByteArray) = error("not used")
     }
 
     /** Only what needs a real device is replaced (Android Context, files on disk); the rest is the real graph. */
     private val platformReplacements = module {
         single<SqlDriver> { createTestDriver() }
         single<ReceiptFileStore> { UnusedFileStore }
+        single<PdfTextExtractor> { UnusedExtractor }
     }
 
     // Local KoinApplication: tests never touch the global Koin instance. Later modules override earlier ones.

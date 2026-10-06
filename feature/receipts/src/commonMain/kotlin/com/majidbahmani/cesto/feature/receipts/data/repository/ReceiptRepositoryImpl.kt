@@ -2,9 +2,11 @@ package com.majidbahmani.cesto.feature.receipts.data.repository
 
 import com.majidbahmani.cesto.core.logging.logWarning
 import com.majidbahmani.cesto.database.Receipt as ReceiptRow
+import com.majidbahmani.cesto.feature.receipts.data.local.PdfTextExtractor
 import com.majidbahmani.cesto.feature.receipts.data.local.ReceiptFileStore
 import com.majidbahmani.cesto.feature.receipts.data.local.ReceiptLocalDataSource
 import com.majidbahmani.cesto.feature.receipts.data.mapper.toDomain
+import com.majidbahmani.cesto.feature.receipts.data.parser.ContinenteReceiptParser
 import com.majidbahmani.cesto.feature.receipts.data.remote.ContinenteReceipts
 import com.majidbahmani.cesto.feature.receipts.data.remote.GmailApi
 import com.majidbahmani.cesto.feature.receipts.data.remote.GmailNotAuthorizedException
@@ -27,7 +29,8 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 
 /**
- * Gmail → database → files.
+ * Gmail → database → files → text. For each receipt: download the PDF, save the file, extract its
+ * text on the phone, parse the fixed fields, save them (FOUND → DOWNLOADED → TEXT_EXTRACTED).
  *
  * - Up to [maxParallelEmails] emails are handled at once; the next starts as soon as one finishes.
  * - Each email is read once: its PDFs are downloaded right away with the attachment ids from that
@@ -40,6 +43,8 @@ class ReceiptRepositoryImpl(
     private val gmail: GmailApi,
     private val local: ReceiptLocalDataSource,
     private val files: ReceiptFileStore,
+    private val textExtractor: PdfTextExtractor,
+    private val parser: ContinenteReceiptParser,
     private val currentTimeMillis: () -> Long,
     private val maxParallelEmails: Int = 4,
 ) : ReceiptRepository {
@@ -56,13 +61,15 @@ class ReceiptRepositoryImpl(
     override suspend fun sync(lookBackMonths: Int): SyncResult = try {
         // Read before handling new emails, so this sync's own failures aren't retried twice.
         val leftovers = local.receiptsWithStatus(ReceiptStatus.FOUND).groupBy { it.gmail_message_id }
+        val unread = local.receiptsWithStatus(ReceiptStatus.DOWNLOADED) // text not extracted yet (or app updated)
         val newIds = allMatchingMessageIds(ContinenteReceipts.gmailQuery(lookBackMonths)).filterNot { local.isChecked(it) }
 
         val limit = Semaphore(maxParallelEmails)
         val outcome = coroutineScope {
             val newEmails = newIds.map { id -> async { limit.withPermit { syncNewEmail(id) } } }
             val retries = leftovers.map { (id, rows) -> async { limit.withPermit { retryDownloads(id, rows) } } }
-            (newEmails + retries).awaitAll().fold(Outcome(), Outcome::plus)
+            val texts = unread.map { receipt -> async { limit.withPermit { extractFromFile(receipt) } } }
+            (newEmails + retries + texts).awaitAll().fold(Outcome(), Outcome::plus)
         }
         SyncResult.Success(outcome.newReceipts, outcome.downloaded, outcome.incomplete)
     } catch (e: CancellationException) {
@@ -118,9 +125,37 @@ class ReceiptRepositoryImpl(
                     Outcome()
                 } else {
                     local.markDownloaded(receipt.id, files.save("receipt-${receipt.id}.pdf", bytes))
+                    extractText(receipt.id, bytes) // the bytes are already here: no need to read the file back
                     Outcome(downloaded = 1)
                 }
             }
+        }
+    }
+
+    /** Downloaded earlier (e.g. before this app version): read the saved file, no Gmail request. */
+    private suspend fun extractFromFile(receipt: ReceiptRow): Outcome = isolated(receipt.gmail_message_id, onFailure = Outcome()) {
+        val path = receipt.pdf_path
+        if (path == null) local.markFailed(receipt.id) else extractText(receipt.id, files.read(path))
+        Outcome()
+    }
+
+    /**
+     * PDF → text → fields. Failures here are permanent (same file, same result), so the receipt is
+     * marked FAILED instead of retried; its PDF stays on the phone.
+     */
+    private suspend fun extractText(receiptId: Long, pdf: ByteArray) {
+        val text = try {
+            textExtractor.extractText(pdf)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            logWarning(TAG, "sync: receipt $receiptId: PDF text unreadable", e)
+            null
+        }
+        if (text.isNullOrBlank()) {
+            local.markFailed(receiptId) // no text layer (scanned) or broken PDF: needs OCR, later
+        } else {
+            local.markTextExtracted(receiptId, text, parser.parse(text))
         }
     }
 

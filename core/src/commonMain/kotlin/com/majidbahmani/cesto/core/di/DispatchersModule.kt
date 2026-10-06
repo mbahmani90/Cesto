@@ -9,6 +9,10 @@ import org.koin.dsl.module
 /** For blocking work (SQLite, files) in the class that does it; injected so tests can replace it. */
 val IoDispatcher = named("IoDispatcher")
 
+/** For CPU-heavy work (parsing PDFs). */
+val DefaultDispatcher = named("DefaultDispatcher")
+
 val dispatchersModule = module {
     single<CoroutineDispatcher>(IoDispatcher) { Dispatchers.IO }
+    single<CoroutineDispatcher>(DefaultDispatcher) { Dispatchers.Default }
 }

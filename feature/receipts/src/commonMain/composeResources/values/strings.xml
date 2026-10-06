@@ -10,6 +10,7 @@
 
     <string name="receipts_status_found">Waiting</string>
     <string name="receipts_status_downloaded">Downloaded</string>
+    <string name="receipts_status_text_extracted">Read</string>
     <string name="receipts_status_ready">Ready</string>
     <string name="receipts_status_failed">Failed</string>
 

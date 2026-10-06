@@ -17,7 +17,17 @@ private val dateFormat = LocalDateTime.Format {
 
 fun Receipt.toUi(timeZone: TimeZone): ReceiptItemUi = ReceiptItemUi(
     id = id,
-    dateText = dateFormat.format(Instant.fromEpochMilliseconds(receivedAtMillis).toLocalDateTime(timeZone)),
+    dateText = dateFormat.format(Instant.fromEpochMilliseconds(purchasedAtMillis ?: receivedAtMillis).toLocalDateTime(timeZone)),
     fileName = fileName,
     status = status,
+    totalText = totalCents?.let(::formatEuros),
 )
+
+/** Portuguese style, as on the receipt: 4,52 € · 1.234,56 €. */
+fun formatEuros(cents: Long): String {
+    val sign = if (cents < 0) "-" else ""
+    val absolute = kotlin.math.abs(cents)
+    val euros = (absolute / 100).toString().reversed().chunked(3).joinToString(".").reversed()
+    val rest = (absolute % 100).toString().padStart(2, '0')
+    return "$sign$euros,$rest €"
+}
