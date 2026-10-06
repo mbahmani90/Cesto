@@ -1,47 +1,146 @@
-This is a Kotlin Multiplatform project targeting Android, iOS.
+# Cesto
 
-* [/iosApp](./iosApp/iosApp) contains an iOS application. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+**Ask your grocery receipts anything.**
 
-* [/androidApp](./androidApp) is the Android entry point (`MainActivity`).
-* [/app](./app/src) is the composition root shared by Android and iOS: `App()`, navigation and DI startup.
-  It also builds the iOS framework (`Shared`).
-  - [commonMain](./app/src/commonMain/kotlin) is for code that’s common for all targets.
-  - [androidMain](./app/src/androidMain/kotlin) and [iosMain](./app/src/iosMain/kotlin) are for platform-specific code.
-* [/systemdesign](./systemdesign/src) is the design system: `CestoTheme` (light + dark colour schemes) and components used by 2+ features.
-* [/feature/onboarding](./feature/onboarding/src) is the first screen: what Cesto reads, "Connect Gmail" and "Try demo".
-* [/feature/receipts](./feature/receipts/src) will list the receipts (placeholder for now).
-* [/gmail-auth](./gmail-auth/src) is the Gmail permission interface (`GmailAuthorizer`), implemented by the platform apps:
-  Android `AuthorizationClient` in `androidApp`, iOS `GoogleSignIn` (Swift Package) in `iosApp`.
-* [/core](./core/src) is non-UI code shared by features: the Ktor `HttpClient` (OkHttp / Darwin engine) and its Koin module.
+Cesto is a Kotlin Multiplatform app (Android + iOS) that finds your **Continente** grocery receipts in
+Gmail and lets you ask questions about them in plain language:
 
-### Setup: Gmail permission
+> "How much did I spend in August?"
+> "How much sugar did I buy last month?"
+> "Did I buy anything with lactose?"
 
-The app asks for read-only Gmail access (`gmail.readonly`) with Google's own dialog; the token stays on the phone.
-It needs OAuth clients in a Google Cloud project (consent screen in *Testing* mode, your account as a test user,
-Gmail API enabled):
+> **Status: early development.** Done so far: the modular KMP architecture, the light/dark theme and
+> onboarding with the Gmail permission on Android and iOS. The receipt search, the local database and
+> the chat are next (see [Roadmap](#roadmap)).
 
-- **Android:** an Android OAuth client for package `com.majidbahmani.cesto` and your debug keystore's SHA-1
-  (`./gradlew :androidApp:signingReport`). Nothing to copy into the project.
-- **iOS:** an iOS OAuth client for bundle ID `com.majidbahmani.cesto.Cesto`. Copy
-  `iosApp/Configuration/Secrets.xcconfig.example` to `Secrets.xcconfig` (gitignored) and fill in the client ID.
-  Without it the app builds and runs, but "Connect Gmail" shows an error.
+## How it will work
 
-### Running the apps
+1. **Connect Gmail.** Google's own dialog asks for read-only access (`gmail.readonly`). ✅
+2. **Find receipts.** Search Continente emails from the last months and download the receipt PDFs.
+3. **Extract once.** PDF → text → an LLM turns it into structured items, stored in a local database.
+4. **Ask.** The LLM answers by calling a few *tools* (for example `sumSpending`, `sumNutrient`); the app
+   runs them as SQL on the phone and only sends the small results back. Numbers come from SQL, not from
+   the LLM's arithmetic.
 
-Use the run configurations provided by the run widget in your IDE's toolbar. You can also use these commands and options:
+### Privacy first
 
-- Android app: `./gradlew :androidApp:assembleDebug`
-- iOS app: open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+- Receipts, PDFs and the database stay **on the phone**. There is no app account and no backend login.
+- The Gmail token never leaves the device; the app never sends, deletes or changes emails.
+- The LLM never sees the database or raw emails, only small tool results. Its API key lives on a backend
+  proxy, never in the app.
 
-### Running tests
+## Architecture
 
-Use the run button in your IDE's editor gutter, or run tests using Gradle tasks:
+![Module architecture](art/module-architecture.svg)
 
-- Android tests: `./gradlew :app:testAndroidHostTest`
-- iOS tests: `./gradlew :app:iosSimulatorArm64Test`
-- `:core` tests: `./gradlew :core:testAndroidHostTest :core:iosSimulatorArm64Test`
+Feature modules with Clean Architecture inside each feature. One composition root (`:app`) knows every
+module; everything else only knows what it needs.
 
----
+| Module | Contains |
+|---|---|
+| [`androidApp`](androidApp) | Android entry point: `CestoApp` starts Koin, `MainActivity`, and `AndroidGmailAuthorizer` (Google Identity `AuthorizationClient`) |
+| [`iosApp`](iosApp) | iOS entry point (SwiftUI) and `GoogleGmailAuthorizer` (GoogleSignIn, Swift Package) |
+| [`:app`](app/src) | Composition root: `App()` with `CestoTheme` and the `NavHost`, `initKoin()` with all Koin modules; builds the iOS framework `Shared` |
+| [`:feature:onboarding`](feature/onboarding/src) | First screen: what Cesto reads and never does, **Connect Gmail**, **Try demo** |
+| [`:feature:receipts`](feature/receipts/src) | Receipt list (placeholder for now) |
+| [`:gmail-auth`](gmail-auth/src) | `GmailAuthorizer`: the Gmail permission interface the platform apps implement |
+| [`:systemdesign`](systemdesign/src) | `CestoTheme`: light and dark colour schemes, components used by 2+ features |
+| [`:core`](core/src) | Non-UI shared code: the Ktor `HttpClient` (OkHttp / Darwin engine) and its Koin module |
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+### Rules
+
+- **Features never depend on each other.** `:app` connects them with navigation lambdas
+  (`onConnected`, `onTryDemo`); each feature owns its route.
+- **Shared modules never depend upward**, and `:systemdesign` and `:core` don't know each other.
+- **Inside a feature:** `presentation → domain ← data`. The domain is plain Kotlin; the data layer
+  implements the domain's repository interfaces; ViewModels only call use cases.
+- **Screen state lives in the ViewModel** (`StateFlow`), composables are stateless (`Route` + `Screen`).
+- **Platform SDKs stay at the edge.** Where the iOS SDK is only practical from Swift (GoogleSignIn), the
+  shared code defines an interface and the platform apps implement it and pass it to `initKoin()`.
+
+### Gmail permission
+
+Gmail access is an **OAuth scope**, not an OS permission: Google's SDK shows the consent dialog and
+returns an access token, which Ktor will send with each Gmail REST call.
+
+```
+Connect Gmail ─► GmailAuthorizer (androidApp: AuthorizationClient · iosApp: GoogleSignIn)
+                     └─► Google's account picker + consent ─► access token (stays on the phone)
+App start     ─► same call without UI: already granted? ─► skip onboarding
+```
+
+## Tech stack
+
+| Area | Library |
+|---|---|
+| UI | Compose Multiplatform 1.12 (Material 3), Navigation Compose 2.9 |
+| DI | Koin 4.2 (`koin-compose-viewmodel`) |
+| Network | Ktor 3.6 (OkHttp on Android, Darwin on iOS), kotlinx.serialization |
+| Gmail permission | Google Identity `AuthorizationClient` (play-services-auth 22) · GoogleSignIn-iOS 10 |
+| Tests | kotlin.test, kotlinx-coroutines-test, Ktor `MockEngine`; shared tests run on Android and iOS |
+| Planned | SQLDelight, kotlinx-datetime, PDF text extraction (PdfBox-Android / PDFKit), AWS LLM proxy |
+
+Kotlin 2.4 · Android minSdk 24, targetSdk 37 · iOS 18.2+
+
+## Getting started
+
+### Requirements
+
+- Android Studio with the Kotlin Multiplatform plugin; JDK 21 (Gradle downloads it if missing)
+- Xcode 16+ for iOS
+
+### Google Cloud setup (Gmail permission)
+
+The app needs OAuth clients in a Google Cloud project:
+
+1. Enable the **Gmail API**.
+2. **Google Auth Platform:** consent screen *External*, publishing status **Testing**, add your Google
+   account as a **test user**, and add the scope `.../auth/gmail.readonly`. `gmail.readonly` is a
+   restricted scope: Testing mode (up to 100 test users) avoids Google's verification.
+3. **Clients:**
+   - **Android:** package `com.majidbahmani.cesto` + your debug keystore's SHA-1
+     (`./gradlew :androidApp:signingReport`). Nothing to copy into the project.
+   - **iOS:** bundle ID `com.majidbahmani.cesto.Cesto`. Copy
+     `iosApp/Configuration/Secrets.xcconfig.example` to `Secrets.xcconfig` (gitignored) and fill in the
+     client ID and its reversed form.
+
+Without these the app still builds and runs; "Connect Gmail" then shows an error and **Try demo** works.
+
+### Run
+
+- **Android:** run `androidApp` from Android Studio, or `./gradlew :androidApp:installDebug`
+- **iOS:** open [`iosApp/iosApp.xcodeproj`](iosApp) in Xcode and run (Xcode builds the Kotlin framework
+  with `:app:embedAndSignAppleFrameworkForXcode`)
+
+### Test
+
+```bash
+./gradlew :gmail-auth:testAndroidHostTest :feature:onboarding:testAndroidHostTest :core:testAndroidHostTest :app:testAndroidHostTest
+./gradlew :gmail-auth:iosSimulatorArm64Test :feature:onboarding:iosSimulatorArm64Test :core:iosSimulatorArm64Test :app:iosSimulatorArm64Test
+```
+
+The same `commonTest` tests run on the JVM and on the iOS simulator: the Gmail access wrapper, the
+onboarding repository and ViewModel, the HTTP client, and the Koin graph (`AppModulesTest`, because Koin
+only reports missing bindings at runtime).
+
+## Design decisions
+
+| Decision | Why |
+|---|---|
+| Data on the device, not in the cloud | Receipts contain the NIF and shopping habits; Gmail is the source of truth, so nothing needs a backup; keeping restricted-scope Gmail data off servers avoids Google's security assessment |
+| No Cognito / app accounts | The Gmail token would end up on AWS, and Cognito can't refresh Google tokens. One Google dialog is all the user sees |
+| Extract once, then query with tools | Sending all receipt text per question is expensive and LLMs make arithmetic mistakes; SQL computes exact sums and scales to 10,000+ items |
+| `:gmail-auth` as its own leaf module | Onboarding and receipts both need it, and features don't depend on each other |
+| Platform implementations in the apps | GoogleSignIn is a Swift Package only practical from Swift; `AuthorizationClient` needs an Activity for the consent screen |
+| Feature modules from the start | Onboarding, receipts and chat are separate features; the compiler enforces the dependency rules |
+| Koin + Ktor | KMP-ready DI and HTTP; the engine is injected so tests use `MockEngine` |
+
+## Roadmap
+
+- **v1: end to end.** Gmail search + PDF download + receipt list · PDF → text → LLM extraction → SQLDelight ·
+  Open Food Facts (sugar, ingredients, category) · chat with tool calling and an agent loop · AWS LLM
+  proxy (API Gateway + Lambda + Secrets Manager) · demo mode with sample receipts
+- **v2: RAG.** Embeddings + `semanticSearch` tool ("lactose" finds *IOG GREGO NAT*), nutrition guidelines
+- **v3: on device.** ONNX embedding model, evaluation set, optional offline LLM, more stores
+
+Receipts show what you **bought**, not what you ate: the app talks about "sugar in groceries purchased".
