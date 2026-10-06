@@ -10,13 +10,15 @@ Gmail and lets you ask questions about them in plain language:
 > "Did I buy anything with lactose?"
 
 > **Status: early development.** Done so far: the modular KMP architecture, the light/dark theme,
-> onboarding with the Gmail permission on Android and iOS, the Gmail REST client and the local database.
-> The receipt sync, the receipt list and the chat are next (see [Roadmap](#roadmap)).
+> onboarding with the Gmail permission on Android and iOS, and the receipt sync: Cartão Continente
+> receipt PDFs from Gmail into the local database and app-private files, shown in a list. Reading the
+> PDFs, extraction and the chat are next (see [Roadmap](#roadmap)).
 
 ## How it will work
 
 1. **Connect Gmail.** Google's own dialog asks for read-only access (`gmail.readonly`). ✅
-2. **Find receipts.** Search Continente emails from the last months and download the receipt PDFs.
+2. **Find receipts.** Search Cartão Continente emails (`noreply@cartaocontinente.pt`) from the last
+   3 months, up to 4 emails in parallel, and download the receipt PDFs. ✅
 3. **Extract once.** PDF → text → an LLM turns it into structured items, stored in a local database.
 4. **Ask.** The LLM answers by calling a few *tools* (for example `sumSpending`, `sumNutrient`); the app
    runs them as SQL on the phone and only sends the small results back. Numbers come from SQL, not from
@@ -42,7 +44,7 @@ module; everything else only knows what it needs.
 | [`iosApp`](iosApp) | iOS entry point (SwiftUI) and `GoogleGmailAuthorizer` (GoogleSignIn, Swift Package) |
 | [`:app`](app/src) | Composition root: `App()` with `CestoTheme` and the `NavHost`, `initKoin()` with all Koin modules; builds the iOS framework `Shared` |
 | [`:feature:onboarding`](feature/onboarding/src) | First screen: what Cesto reads and never does, **Connect Gmail**, **Try demo** |
-| [`:feature:receipts`](feature/receipts/src) | Gmail REST client (`messages.list`, `messages.get`, `attachments.get`) with Ktor; receipt list (placeholder for now) |
+| [`:feature:receipts`](feature/receipts/src) | Receipt sync (Gmail REST with Ktor → database → PDF files) and the receipt list with pull to refresh |
 | [`:gmail-auth`](gmail-auth/src) | `GmailAuthorizer`: the Gmail permission interface the platform apps implement |
 | [`:systemdesign`](systemdesign/src) | `CestoTheme`: light and dark colour schemes, components used by 2+ features |
 | [`:core`](core/src) | Non-UI shared code: the Ktor `HttpClient` (OkHttp / Darwin engine) and its Koin module |
@@ -140,11 +142,15 @@ because Koin only reports missing bindings at runtime).
 | Koin + Ktor | KMP-ready DI and HTTP; the engine is injected so tests use `MockEngine` |
 | `:database` as a shared module | Receipts fill the database and the chat's SQL tools will query it; features can't depend on each other |
 | Receipts keyed by Gmail `messageId + partId` | Gmail returns a different `attachmentId` on every request, so it can't identify a PDF; it's fetched fresh for each download |
+| Sync: parallel, each email on its own | Up to 4 emails at once (a slow PDF doesn't block the others); each email is read once and its PDFs downloaded right away. An email is marked checked in the same transaction as its receipts; anything that failed is retried by the next sync, and only a failed search fails the whole sync |
+| Look-back period in the domain | "3 months" is a product rule (`SyncReceiptsUseCase`); the data layer turns it into Gmail syntax (`newer_than:3m`) |
+| The list reads only the database | The sync writes, the screen observes (single source of truth); saved receipts stay visible offline or when Gmail fails |
+| Relative PDF paths | iOS changes the app container's absolute path between installs and updates; PDFs are also excluded from iCloud backup |
 | No Android backup (`allowBackup=false`, data extraction rules) | Receipt data never leaves the phone, not even to Google's backup or a new device; a new install syncs from Gmail again |
 
 ## Roadmap
 
-- **v1: end to end.** Gmail search + PDF download + receipt list · PDF → text → LLM extraction → SQLDelight ·
+- **v1: end to end.** ~~Gmail search + PDF download + receipt list~~ ✅ · PDF viewer · PDF → text → LLM extraction → SQLDelight ·
   Open Food Facts (sugar, ingredients, category) · chat with tool calling and an agent loop · AWS LLM
   proxy (API Gateway + Lambda + Secrets Manager) · demo mode with sample receipts
 - **v2: RAG.** Embeddings + `semanticSearch` tool ("lactose" finds *IOG GREGO NAT*), nutrition guidelines

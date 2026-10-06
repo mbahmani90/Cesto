@@ -30,7 +30,7 @@ fun MessageDto.pdfAttachments(): List<PdfAttachmentRef> =
         val attachmentId = part.body?.attachmentId ?: return@mapNotNull null
         val isPdf = part.mimeType.equals("application/pdf", ignoreCase = true) ||
             fileName.endsWith(".pdf", ignoreCase = true)
-        if (isPdf) PdfAttachmentRef(partId, attachmentId, fileName, part.body?.size ?: 0) else null
+        if (isPdf) PdfAttachmentRef(partId, attachmentId, fileName, part.body.size) else null
     }
 
 private fun MessagePartDto.allParts(): List<MessagePartDto> = listOf(this) + parts.flatMap { it.allParts() }

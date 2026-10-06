@@ -38,7 +38,7 @@ class KtorGmailApiTest {
         handler: MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
     ) = KtorGmailApi(
         client = createHttpClient(MockEngine { request -> requests += request; handler(request) }),
-        tokens = GmailTokenProvider(authorizer),
+        tokens = GmailTokenProvider(authorizer, currentTimeMillis = { 0L }),
     )
 
     private fun MockRequestHandleScope.respondJson(body: String, status: HttpStatusCode = HttpStatusCode.OK) =

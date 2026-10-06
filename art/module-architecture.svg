@@ -42,10 +42,11 @@
   <!-- :feature:onboarding -> :gmail-auth, :systemdesign -->
   <path class="dep" d="M180,460 L150,568" marker-end="url(#arrow)"/>
   <path class="dep" d="M340,460 L350,568" marker-end="url(#arrow)"/>
-  <!-- :feature:receipts -> :gmail-auth, :systemdesign, :core -->
+  <!-- :feature:receipts -> :gmail-auth, :systemdesign, :core, :database -->
   <path class="dep" d="M620,460 L225,568" marker-end="url(#arrow)"/>
   <path class="dep" d="M600,460 L430,568" marker-end="url(#arrow)"/>
   <path class="dep" d="M700,460 L600,568" marker-end="url(#arrow)"/>
+  <path class="dep" d="M790,460 L800,568" marker-end="url(#arrow)"/>
   <!-- platform apps implement GmailAuthorizer -->
   <path class="impl" d="M90,85 L14,85 L14,615 L28,615" marker-end="url(#arrow-impl)"/>
   <path class="impl" d="M890,85 L964,85 L964,712 L135,712 L135,662" marker-end="url(#arrow-impl)"/>
@@ -77,8 +78,8 @@
 
   <rect class="feature" x="580" y="370" width="290" height="90" rx="12"/>
   <text class="h" x="598" y="398">:feature:receipts</text>
-  <text class="t" x="598" y="422">data/remote: Gmail REST (Ktor)</text>
-  <text class="t" x="598" y="442">UI: placeholder for now</text>
+  <text class="t" x="598" y="422">Gmail sync → database → PDF files</text>
+  <text class="t" x="598" y="442">Receipt list · pull to refresh</text>
 
   <!-- Shared modules -->
   <rect class="shared" x="30" y="570" width="210" height="90" rx="12"/>
@@ -116,6 +117,6 @@
   <text class="t" x="102" y="752">Gradle dependency</text>
   <path class="impl" d="M260,748 L320,748" marker-end="url(#arrow-impl)"/>
   <text class="t" x="332" y="752">implements GmailAuthorizer, passed to initKoin()</text>
-  <text class="note" x="30" y="776">:app depends on every module to build the Koin graph; only its edges to features and :gmail-auth are drawn.</text>
+  <text class="note" x="30" y="776">:app depends on every module to build the Koin graph; only its edges to the features and :gmail-auth are drawn.</text>
   <text class="note" x="30" y="794">Features never depend on each other; :app wires them with navigation lambdas. Shared modules never depend upward.</text>
 </svg>

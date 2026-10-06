@@ -20,6 +20,12 @@ final class GoogleGmailAuthorizer: GmailAuthorizer {
             return
         }
 
+        // Already signed in this session: no need to restore from the keychain again.
+        if let user = GIDSignIn.sharedInstance.currentUser, hasGmailScope(user) {
+            deliverToken(of: user, onSuccess: onSuccess, onFailure: onFailure)
+            return
+        }
+
         GIDSignIn.sharedInstance.restorePreviousSignIn { user, _ in
             if let user, self.hasGmailScope(user) {
                 self.deliverToken(of: user, onSuccess: onSuccess, onFailure: onFailure)

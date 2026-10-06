@@ -21,8 +21,15 @@ insertIfNew:
 INSERT OR IGNORE INTO receipt(gmail_message_id, gmail_part_id, file_name, received_at, status)
 VALUES (?, ?, ?, ?, 'FOUND');
 
+-- Rows changed by the last statement: 0 when insertIfNew found an existing receipt.
+changes:
+SELECT changes();
+
 selectAll:
 SELECT * FROM receipt ORDER BY received_at DESC, id DESC;
+
+selectByMessage:
+SELECT * FROM receipt WHERE gmail_message_id = ? ORDER BY id;
 
 selectByStatus:
 SELECT * FROM receipt WHERE status = ? ORDER BY received_at DESC, id DESC;
