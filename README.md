@@ -204,6 +204,22 @@ Code style is ktlint (Android Studio style) with the Compose rules, through Spot
 ./gradlew :androidApp:lintDebug
 ```
 
+### Release (GitHub only)
+
+Pushing a version tag builds a signed release APK and publishes it as a GitHub Release
+([`.github/workflows/release.yml`](.github/workflows/release.yml)); there's no Google Play release.
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+- **Build signed APK**: `v1.2.3` → versionName `1.2.3`, versionCode `10203`; the signing key comes from encrypted
+  secrets, only in this job, and the signature is verified with `apksigner`.
+- **Publish GitHub Release**: `cesto-1.2.3.apk`, `SHA256SUMS.txt` and notes from the merged PRs. The only job that
+  can write, and it never sees the key.
+- Without the signing secrets, a local `./gradlew :androidApp:assembleRelease` just builds an unsigned APK.
+
 ## Design decisions
 
 | Decision | Why |
