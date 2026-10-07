@@ -57,6 +57,25 @@ Vectors find **which** products, SQL counts **how much**, and Gemini only reads 
 vectors. Gemini embeddings run in Google's cloud with your own key; an on-device model (EmbeddingGemma)
 can replace them later behind the same `EmbeddingProvider` interface.
 
+### Daily spending notification (planned, Android)
+
+![Daily spending notification: CestoApp schedules, WorkManager repeats, doWork() syncs, sums and notifies](art/daily-spending-work-flow.svg)
+
+Every morning around 09:00: *"Yesterday you spent 23,45 € (3 receipts)"*.
+
+1. **Scheduling.** Koin only creates `DailySpendingScheduler`; `CestoApp.onCreate()` calls `schedule()`, a
+   unique 24 h periodic job with `KEEP`, so starting the app again changes nothing. WorkManager keeps the job
+   across reboots and updates; after a force-stop, the next app start schedules it again.
+2. **The worker.** `DailySpendingWorker` syncs new receipts from Gmail (silent token; if that fails, it uses
+   the receipts already stored), sums yesterday's `total_cents` with SQL, and posts a notification unless
+   there were no receipts.
+3. **Staying at 09:00.** A periodic job counts the next 24 h from when the last run finished, so delays (Doze)
+   and clock changes would make it drift. Right before `Result.success()`, the worker calls
+   `pinNextRun(id)` (`setNextScheduleTimeOverride`) to move the next run back to tomorrow 09:00. It never
+   enqueues itself again.
+
+The sum is a shared use case, so iOS can reuse it later (`BGAppRefreshTask` + a local notification).
+
 ### Privacy first
 
 - Receipts, PDFs and the database stay **on the phone**. There is no app account and no backend login.
@@ -246,7 +265,8 @@ git push origin v1.0.0
 
 - **v1: end to end.** ~~Gmail search + PDF download + receipt list~~ ✅ · ~~PDF → text (date, total)~~ ✅ · PDF viewer ·
   ~~LLM extraction of the items~~ ✅ · ~~Gemini key in Settings~~ ✅ · ~~chat with tool calling and an agent loop~~ ✅ ·
-  Open Food Facts (sugar, ingredients, category) · demo mode with sample receipts
+  Open Food Facts (sugar, ingredients, category) · demo mode with sample receipts ·
+  daily notification with yesterday's spending (WorkManager)
 - **v2: RAG.** ~~Gemini embeddings + `semanticSearch` tool ("dairy" finds *IOG GREGO NAT*)~~ ✅ · nutrition guidelines
 - **v3: on device.** On-device embedding model (EmbeddingGemma), evaluation set, optional offline LLM, more stores
 
