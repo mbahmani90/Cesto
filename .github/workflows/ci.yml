@@ -1,5 +1,8 @@
-# Every PR and every push to main: the shared tests on Android (JVM) and the Android app build.
-# iOS isn't built in CI for now (run ./gradlew iosSimulatorArm64Test locally).
+# Every PR and every push to main (doc 30):
+#   Changes ─► Build ─┬─► Unit tests   ─┐
+#                     ├─► Android Lint ─┼─► CI result
+#                     └─► Code style   ─┘
+# Android only: iOS isn't built in CI for now (run ./gradlew iosSimulatorArm64Test locally).
 # No secrets: tests use fakes and MockEngine, so CI never calls Gmail or Gemini.
 name: CI
 
@@ -37,41 +40,85 @@ jobs:
               - '!art/**'
               - '!LICENSE'
 
-  android:
-    name: Android tests + build
+  build:
+    name: Build
     needs: changes
     if: ${{ needs.changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       # gradle/gradle-daemon-jvm.properties asks for Azul JDK 21.
       - uses: actions/setup-java@v6
-        with:
-          distribution: zulu
-          java-version: 21
+        with: { distribution: zulu, java-version: 21 }
       - uses: android-actions/setup-android@v4
       - uses: gradle/actions/setup-gradle@v6
-      - name: Tests (Android host) and debug APK
-        run: ./gradlew testAndroidHostTest :androidApp:assembleDebug --continue
-      - name: Test reports
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: android-test-reports
-          path: '**/build/reports/tests/'
-          retention-days: 7
-      - name: Debug APK
-        uses: actions/upload-artifact@v7
+      - run: ./gradlew :androidApp:assembleDebug
+      - uses: actions/upload-artifact@v7
         with:
           name: debug-apk
           path: androidApp/build/outputs/apk/debug/*.apk
           retention-days: 7
 
+  unit-tests:
+    name: Unit tests
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with: { distribution: zulu, java-version: 21 }
+      - uses: android-actions/setup-android@v4
+      - uses: gradle/actions/setup-gradle@v6
+      # The shared commonTest tests, on the JVM.
+      - run: ./gradlew testAndroidHostTest --continue
+      - name: Test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: '**/build/reports/tests/'
+          retention-days: 7
+
+  lint:
+    name: Android Lint
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with: { distribution: zulu, java-version: 21 }
+      - uses: android-actions/setup-android@v4
+      - uses: gradle/actions/setup-gradle@v6
+      # The app and, with checkDependencies, every KMP module. Errors fail; warnings are in the report.
+      - run: ./gradlew :androidApp:lintDebug
+      - name: Lint report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: lint-report
+          path: androidApp/build/reports/lint-results-debug.*
+          retention-days: 7
+
+  code-style:
+    name: Code style
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with: { distribution: zulu, java-version: 21 }
+      - uses: gradle/actions/setup-gradle@v6
+      # ktlint + Compose rules via Spotless; fix locally with ./gradlew spotlessApply.
+      - run: ./gradlew spotlessCheck
+
   # One check for branch protection: passes when every job passed or was skipped (docs-only change).
   ci-result:
     name: CI result
-    needs: [changes, android]
+    needs: [changes, build, unit-tests, lint, code-style]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:

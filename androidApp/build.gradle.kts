@@ -53,4 +53,10 @@ android {
     buildFeatures {
         compose = true
     }
+    lint {
+        // Also lint the KMP modules (:app, features, :core…): they have no lint task of their own.
+        checkDependencies = true
+        // Errors fail CI; warnings are only reported (HTML report in the CI artifacts).
+        abortOnError = true
+    }
 }
