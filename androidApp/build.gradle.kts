@@ -37,8 +37,20 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    // Release signing only from environment variables (CI secrets, doc 31): without them the release APK
+    // is unsigned, so local builds never need the key. Never in files or gradle.properties.
+    val keystore = System.getenv("CESTO_KEYSTORE_FILE")
+    if (!keystore.isNullOrBlank()) {
+        signingConfigs.create("release") {
+            storeFile = file(keystore)
+            storePassword = System.getenv("CESTO_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("CESTO_KEY_ALIAS")
+            keyPassword = System.getenv("CESTO_KEY_PASSWORD")
+        }
+    }
     buildTypes {
         release {
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -58,5 +70,18 @@ android {
         checkDependencies = true
         // Errors fail CI; warnings are only reported (HTML report in the CI artifacts).
         abortOnError = true
+    }
+}
+
+// Version from the release tag (v1.2.3 → -Pcesto.versionName=1.2.3 -Pcesto.versionCode=10203). The variant API
+// runs after android {}, so defaultConfig's "1.0" / 1 don't overwrite it; local builds keep those.
+androidComponents {
+    val versionName = findProperty("cesto.versionName") as String?
+    val versionCode = (findProperty("cesto.versionCode") as String?)?.toInt()
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            versionName?.let { output.versionName.set(it) }
+            versionCode?.let { output.versionCode.set(it) }
+        }
     }
 }
