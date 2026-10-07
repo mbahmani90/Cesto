@@ -8,8 +8,4 @@ import kotlinx.serialization.Serializable
  * [data] is base64url encoded.
  */
 @Serializable
-data class MessagePartBodyDto(
-    val attachmentId: String? = null,
-    val size: Int = 0,
-    val data: String? = null,
-)
+data class MessagePartBodyDto(val attachmentId: String? = null, val size: Int = 0, val data: String? = null)

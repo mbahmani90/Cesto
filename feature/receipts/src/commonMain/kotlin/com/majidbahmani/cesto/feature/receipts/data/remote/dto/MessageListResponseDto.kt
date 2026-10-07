@@ -7,5 +7,5 @@ import kotlinx.serialization.Serializable
 data class MessageListResponseDto(
     val messages: List<MessageRefDto> = emptyList(),
     val nextPageToken: String? = null,
-    val resultSizeEstimate: Int? = null,
+    val resultSizeEstimate: Int? = null
 )

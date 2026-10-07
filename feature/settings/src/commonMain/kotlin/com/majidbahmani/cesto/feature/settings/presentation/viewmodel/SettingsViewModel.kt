@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(
     observeGeminiKey: ObserveGeminiKeyUseCase,
     private val saveGeminiKey: SaveGeminiKeyUseCase,
-    private val removeGeminiKey: RemoveGeminiKeyUseCase,
+    private val removeGeminiKey: RemoveGeminiKeyUseCase
 ) : ViewModel() {
 
     /** Screen-only state (doc 29), grouped: one flow, one update per event. */
@@ -27,7 +27,7 @@ class SettingsViewModel(
         val keyInput: String = "",
         val isKeyVisible: Boolean = false,
         val isTesting: Boolean = false,
-        val feedback: SaveKeyResult? = null,
+        val feedback: SaveKeyResult? = null
     )
 
     private val screenState = MutableStateFlow(ScreenState())
@@ -41,7 +41,7 @@ class SettingsViewModel(
             keyInput = screen.keyInput,
             isKeyVisible = screen.isKeyVisible,
             isTesting = screen.isTesting,
-            feedback = screen.feedback,
+            feedback = screen.feedback
         )
     }.stateIn(viewModelScope, SharingStarted.Lazily, SettingsUiState())
 
@@ -52,7 +52,6 @@ class SettingsViewModel(
     fun onToggleKeyVisibility() = screenState.update { it.copy(isKeyVisible = !it.isKeyVisible) }
 
     fun onChangeKey() = screenState.update { it.copy(isChanging = true, keyInput = "", feedback = null) }
-
 
     fun onCancelChange() = screenState.update { ScreenState() }
 

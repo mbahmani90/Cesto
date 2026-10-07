@@ -9,11 +9,8 @@ import kotlinx.serialization.Serializable
 data object OnboardingRoute
 
 /** The feature's only entry point; where to go next is decided by :app through the lambdas. */
-fun NavGraphBuilder.onboardingScreen(
-    onConnected: () -> Unit,
-    onTryDemo: () -> Unit,
-) {
+fun NavGraphBuilder.onboardingScreen(onConnect: () -> Unit, onTryDemo: () -> Unit) {
     composable<OnboardingRoute> {
-        OnboardingRoute(onConnected = onConnected, onTryDemo = onTryDemo)
+        OnboardingRoute(onConnect = onConnect, onTryDemo = onTryDemo)
     }
 }

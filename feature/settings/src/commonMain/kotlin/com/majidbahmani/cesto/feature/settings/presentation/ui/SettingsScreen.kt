@@ -85,10 +85,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-internal fun SettingsRoute(
-    contentPadding: PaddingValues = PaddingValues(),
-    viewModel: SettingsViewModel = koinViewModel(),
-) {
+internal fun SettingsRoute(contentPadding: PaddingValues = PaddingValues(), viewModel: SettingsViewModel = koinViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val uriHandler = LocalUriHandler.current
     SettingsScreen(
@@ -103,7 +100,7 @@ internal fun SettingsRoute(
         onChangeKey = viewModel::onChangeKey,
         onCancelChange = viewModel::onCancelChange,
         onRemoveKey = viewModel::onRemoveKey,
-        contentPadding = contentPadding,
+        contentPadding = contentPadding
     )
 }
 
@@ -122,7 +119,7 @@ internal fun SettingsScreen(
     onRemoveKey: () -> Unit,
     modifier: Modifier = Modifier,
     /** Space the floating bottom bar covers. */
-    contentPadding: PaddingValues = PaddingValues(),
+    contentPadding: PaddingValues = PaddingValues()
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
         Column(
@@ -130,7 +127,7 @@ internal fun SettingsScreen(
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
                 .verticalScroll(rememberScrollState())
                 .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + contentPadding.calculateBottomPadding()),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             CestoScreenTitle(stringResource(Res.string.settings_title))
 
@@ -138,21 +135,23 @@ internal fun SettingsScreen(
             Text(
                 text = stringResource(Res.string.settings_gemini_intro),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             when {
                 uiState.isLoading -> Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
+
                 !uiState.isEditing && uiState.savedKeyMasked != null -> {
                     SavedKeyCard(
                         masked = uiState.savedKeyMasked,
                         onChangeKey = onChangeKey,
-                        onRemoveKey = onRemoveKey,
+                        onRemoveKey = onRemoveKey
                     )
                     BillingCard(onOpenBilling = onOpenBilling)
                 }
+
                 else -> {
                     AccountField(email = uiState.accountEmail, onEmailChange = onAccountEmailChange)
                     StepCard(
@@ -160,21 +159,21 @@ internal fun SettingsScreen(
                         title = Res.string.settings_step1_title,
                         text = Res.string.settings_step1_text,
                         button = Res.string.settings_step1_button,
-                        onClick = onOpenCloudConsole,
+                        onClick = onOpenCloudConsole
                     )
                     StepCard(
                         number = 2,
                         title = Res.string.settings_step2_title,
                         text = Res.string.settings_step2_text,
                         button = Res.string.settings_step2_button,
-                        onClick = onOpenAiStudio,
+                        onClick = onOpenAiStudio
                     )
                     KeyEntry(
                         uiState = uiState,
                         onKeyInputChange = onKeyInputChange,
                         onToggleKeyVisibility = onToggleKeyVisibility,
                         onTestAndSave = onTestAndSave,
-                        onCancelChange = onCancelChange,
+                        onCancelChange = onCancelChange
                     )
                 }
             }
@@ -198,7 +197,7 @@ private fun AccountField(email: String, onEmailChange: (String) -> Unit) {
             Text(stringResource(if (invalid) Res.string.settings_account_invalid else Res.string.settings_account_hint))
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, autoCorrectEnabled = false),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth()
     )
 }
 
@@ -213,7 +212,7 @@ private fun StepCard(number: Int, title: StringResource, text: StringResource, b
                             text = number.toString(),
                             color = MaterialTheme.colorScheme.onPrimary,
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
@@ -231,7 +230,7 @@ private fun KeyEntry(
     onKeyInputChange: (String) -> Unit,
     onToggleKeyVisibility: () -> Unit,
     onTestAndSave: () -> Unit,
-    onCancelChange: () -> Unit,
+    onCancelChange: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         OutlinedTextField(
@@ -247,7 +246,7 @@ private fun KeyEntry(
                     Text(stringResource(if (uiState.isKeyVisible) Res.string.settings_key_hide else Res.string.settings_key_show))
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth()
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Button(onClick = onTestAndSave, enabled = !uiState.isTesting, modifier = Modifier.height(48.dp)) {
@@ -276,7 +275,7 @@ private fun SavedKeyCard(masked: String, onChangeKey: () -> Unit, onRemoveKey: (
             Text(
                 text = stringResource(Res.string.settings_saved_key_working),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.primary
             )
             Spacer(Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -298,7 +297,7 @@ private fun BillingCard(onOpenBilling: () -> Unit) {
             Text(
                 text = stringResource(Res.string.settings_billing_text),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             OutlinedButton(onClick = onOpenBilling) { Text(stringResource(Res.string.settings_billing_button)) }
         }
@@ -320,7 +319,7 @@ private fun Feedback(result: SaveKeyResult) {
         color = if (isSuccess) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.errorContainer,
         contentColor = if (isSuccess) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onErrorContainer,
         shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Text(stringResource(text), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(12.dp))
     }
@@ -332,8 +331,9 @@ private fun SettingsSetupPreview() {
     CestoTheme {
         SettingsScreen(
             uiState = SettingsUiState(isLoading = false, isEditing = true, keyInput = "AIzaSy…", feedback = SaveKeyResult.INVALID_KEY),
-            onOpenCloudConsole = {}, onOpenAiStudio = {}, onOpenBilling = {}, onAccountEmailChange = {}, onKeyInputChange = {}, onToggleKeyVisibility = {},
-            onTestAndSave = {}, onChangeKey = {}, onCancelChange = {}, onRemoveKey = {},
+            onOpenCloudConsole = {
+            }, onOpenAiStudio = {}, onOpenBilling = {}, onAccountEmailChange = {}, onKeyInputChange = {}, onToggleKeyVisibility = {},
+            onTestAndSave = {}, onChangeKey = {}, onCancelChange = {}, onRemoveKey = {}
         )
     }
 }
@@ -344,8 +344,9 @@ private fun SettingsSavedDarkPreview() {
     CestoTheme(darkTheme = true) {
         SettingsScreen(
             uiState = SettingsUiState(isLoading = false, savedKeyMasked = "AIza…x9Q2", feedback = SaveKeyResult.SAVED),
-            onOpenCloudConsole = {}, onOpenAiStudio = {}, onOpenBilling = {}, onAccountEmailChange = {}, onKeyInputChange = {}, onToggleKeyVisibility = {},
-            onTestAndSave = {}, onChangeKey = {}, onCancelChange = {}, onRemoveKey = {},
+            onOpenCloudConsole = {
+            }, onOpenAiStudio = {}, onOpenBilling = {}, onAccountEmailChange = {}, onKeyInputChange = {}, onToggleKeyVisibility = {},
+            onTestAndSave = {}, onChangeKey = {}, onCancelChange = {}, onRemoveKey = {}
         )
     }
 }

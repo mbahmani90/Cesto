@@ -41,7 +41,7 @@ class GeminiAgentModel(
     private val gemini: GeminiApi,
     private val keys: GeminiKeyStore,
     private val prompt: ReceiptAgentPrompt,
-    private val retryWaitMillis: Long = RETRY_WAIT_MILLIS,
+    private val retryWaitMillis: Long = RETRY_WAIT_MILLIS
 ) : AgentModel {
 
     override val isReady: Flow<Boolean> = keys.key.map { !it.isNullOrBlank() }.distinctUntilChanged()
@@ -81,13 +81,16 @@ class GeminiAgentModel(
         logWarning(TAG, "Gemini answered ${status.value}")
         return when (status) {
             HttpStatusCode.TooManyRequests -> AskFailure.QUOTA
+
             HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden -> AskFailure.KEY_REJECTED
+
             HttpStatusCode.BadRequest ->
                 if (runCatching { response.bodyAsText() }.getOrDefault("").contains("API_KEY_INVALID")) {
                     AskFailure.KEY_REJECTED
                 } else {
                     AskFailure.FAILED
                 }
+
             else -> AskFailure.FAILED
         }
     }
@@ -104,7 +107,9 @@ internal fun AgentTurn.toContent(): JsonObject = when (this) {
         put("role", "user")
         putJsonArray("parts") { addJsonObject { put("text", text) } }
     }
+
     is AgentTurn.Model -> content
+
     is AgentTurn.ToolResults -> buildJsonObject {
         put("role", "user")
         putJsonArray("parts") {
@@ -124,7 +129,7 @@ internal fun AgentTurn.toContent(): JsonObject = when (this) {
 /** Function calls win over text: the model sometimes says "Let me check" next to its calls. */
 internal fun JsonObject.toReply(): ModelReply {
     val turn = AgentTurn.Model(
-        if ("role" in this) this else JsonObject(this + ("role" to JsonPrimitive("model"))),
+        if ("role" in this) this else JsonObject(this + ("role" to JsonPrimitive("model")))
     )
     val parts = (this["parts"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
     val calls = parts.mapNotNull { part ->
@@ -133,7 +138,7 @@ internal fun JsonObject.toReply(): ModelReply {
         ToolCall(
             name = name,
             arguments = call["args"] as? JsonObject ?: JsonObject(emptyMap()),
-            id = (call["id"] as? JsonPrimitive)?.contentOrNull,
+            id = (call["id"] as? JsonPrimitive)?.contentOrNull
         )
     }
     if (calls.isNotEmpty()) return ModelReply.UseTools(calls, turn)

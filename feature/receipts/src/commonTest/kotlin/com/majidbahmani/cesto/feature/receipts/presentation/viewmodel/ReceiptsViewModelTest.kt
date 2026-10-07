@@ -8,6 +8,12 @@ import com.majidbahmani.cesto.feature.receipts.domain.repository.ReceiptReposito
 import com.majidbahmani.cesto.feature.receipts.domain.usecase.ObserveReceiptsUseCase
 import com.majidbahmani.cesto.feature.receipts.domain.usecase.SyncReceiptsUseCase
 import com.majidbahmani.cesto.feature.receipts.presentation.viewmodel.ReceiptsUiState.SyncProblem
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,12 +27,6 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.TimeZone
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReceiptsViewModelTest {
@@ -61,7 +61,7 @@ class ReceiptsViewModelTest {
     private fun TestScope.viewModel() = ReceiptsViewModel(
         observeReceipts = ObserveReceiptsUseCase(repository),
         syncReceipts = SyncReceiptsUseCase(repository),
-        timeZone = TimeZone.UTC,
+        timeZone = TimeZone.UTC
     ).also {
         backgroundScope.launch { it.uiState.collect() }
         runCurrent()

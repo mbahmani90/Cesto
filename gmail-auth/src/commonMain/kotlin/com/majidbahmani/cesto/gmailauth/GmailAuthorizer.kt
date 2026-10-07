@@ -14,7 +14,7 @@ enum class GmailAuthError {
     NOT_GRANTED,
 
     /** Anything else: no network, misconfigured OAuth client, Play services error. */
-    FAILED,
+    FAILED
 }
 
 /**
@@ -29,9 +29,5 @@ interface GmailAuthorizer {
      * @param interactive true: may show Google's account picker and consent dialog.
      *   false: only returns a token if access is already granted, never shows UI.
      */
-    fun authorize(
-        interactive: Boolean,
-        onSuccess: (accessToken: String) -> Unit,
-        onFailure: (GmailAuthError) -> Unit,
-    )
+    fun authorize(interactive: Boolean, onSuccess: (accessToken: String) -> Unit, onFailure: (GmailAuthError) -> Unit)
 }

@@ -32,7 +32,7 @@ private val LightColors = lightColorScheme(
     surfaceDim = CestoColors.SurfaceDim,
     surfaceBright = CestoColors.Surface,
     outline = CestoColors.Outline,
-    outlineVariant = CestoColors.OutlineVariant,
+    outlineVariant = CestoColors.OutlineVariant
 )
 
 private val DarkColors = darkColorScheme(
@@ -59,7 +59,7 @@ private val DarkColors = darkColorScheme(
     surfaceDim = CestoDarkColors.Surface,
     surfaceBright = CestoDarkColors.SurfaceBright,
     outline = CestoDarkColors.Outline,
-    outlineVariant = CestoDarkColors.OutlineVariant,
+    outlineVariant = CestoDarkColors.OutlineVariant
 )
 
 /**
@@ -67,9 +67,6 @@ private val DarkColors = darkColorScheme(
  * tests and a later in-app setting can force a mode.
  */
 @Composable
-fun CestoTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit,
-) {
+fun CestoTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = if (darkTheme) DarkColors else LightColors, content = content)
 }

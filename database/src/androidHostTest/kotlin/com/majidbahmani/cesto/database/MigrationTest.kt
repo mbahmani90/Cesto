@@ -30,19 +30,19 @@ class MigrationTest {
                 UNIQUE (gmail_message_id, gmail_part_id)
             )
             """.trimIndent(),
-            0,
+            0
         )
         driver.execute(null, "CREATE INDEX receipt_received_at ON receipt(received_at)", 0)
         driver.execute(
             null,
             "CREATE TABLE gmail_message (id TEXT NOT NULL PRIMARY KEY, received_at INTEGER NOT NULL, checked_at INTEGER NOT NULL)",
-            0,
+            0
         )
         driver.execute(
             null,
             "INSERT INTO receipt(gmail_message_id, gmail_part_id, file_name, received_at, pdf_path, status) " +
                 "VALUES ('m1', '1', 'f.pdf', 1000, 'receipts/receipt-1.pdf', 'DOWNLOADED')",
-            0,
+            0
         )
     }
 
@@ -88,7 +88,12 @@ class MigrationTest {
         val database = CestoDatabase(driver)
         database.productQueries.insertIfNew("BANANA", "Banana", "Frutas e Legumes", 1)
         val productId = database.productQueries.idByRawName("BANANA").executeAsOne()
-        database.productEmbeddingQueries.upsert(productId, "model@3", "Banana. Categoria: Frutas e Legumes", floatArrayOf(0.6f, 0.8f, 0f).toBlob())
+        database.productEmbeddingQueries.upsert(
+            productId,
+            "model@3",
+            "Banana. Categoria: Frutas e Legumes",
+            floatArrayOf(0.6f, 0.8f, 0f).toBlob()
+        )
 
         val row = database.productEmbeddingQueries.vectorsForModel("model@3").executeAsOne()
         assertEquals("Banana", row.normalized_name)

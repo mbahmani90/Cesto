@@ -9,9 +9,9 @@ import com.majidbahmani.cesto.feature.chat.domain.model.ReceiptTools
 import com.majidbahmani.cesto.feature.chat.domain.usecase.AskQuestionUseCase
 import com.majidbahmani.cesto.feature.chat.domain.usecase.ObserveAssistantReadyUseCase
 import com.majidbahmani.cesto.feature.chat.presentation.viewmodel.ChatViewModel
+import kotlin.time.Clock
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
-import kotlin.time.Clock
 
 /** Needs the IO dispatcher (:core), CestoDatabase (:database), GeminiApi + key store + EmbeddingProvider (:llm). */
 val chatModule = module {
@@ -20,7 +20,7 @@ val chatModule = module {
         ReceiptAgentPrompt(
             database = get(),
             ioDispatcher = get(IoDispatcher),
-            currentTimeMillis = { Clock.System.now().toEpochMilliseconds() },
+            currentTimeMillis = { Clock.System.now().toEpochMilliseconds() }
         )
     }
     single<AgentModel> { GeminiAgentModel(gemini = get(), keys = get(), prompt = get()) }

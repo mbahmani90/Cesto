@@ -9,22 +9,21 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertTrue
 
 class GeminiReceiptItemExtractorTest {
 
     private val requests = mutableListOf<HttpRequestData>()
 
-    private fun extractor(status: HttpStatusCode = HttpStatusCode.OK, answer: String = "") =
-        extractor(answer) { status }
+    private fun extractor(status: HttpStatusCode = HttpStatusCode.OK, answer: String = "") = extractor(answer) { status }
 
     /** [statusFor] decides each answer's status by request number (0, 1, …). */
     private fun extractor(answer: String, statusFor: (Int) -> HttpStatusCode) = GeminiReceiptItemExtractor(
@@ -35,9 +34,9 @@ class GeminiReceiptItemExtractorTest {
                     requests += request
                     val body = """{"candidates":[{"content":{"parts":[{"text":${Json.encodeToString(answer)}}]},"finishReason":"STOP"}]}"""
                     respond(if (status == HttpStatusCode.OK) body else "{}", status, headersOf(HttpHeaders.ContentType, "application/json"))
-                },
-            ),
-        ),
+                }
+            )
+        )
     )
 
     /** What Gemini's structured output looks like for the two lines of the invented sample. */
@@ -67,7 +66,7 @@ class GeminiReceiptItemExtractorTest {
         val request = requests.single()
         assertEquals(
             "https://generativelanguage.googleapis.com/v1beta/models/${GeminiApi.EXTRACTION_MODEL}:generateContent",
-            request.url.toString(),
+            request.url.toString()
         )
         assertEquals("AIza-test", request.headers[GeminiApi.API_KEY_HEADER])
         val body = Json.parseToJsonElement((request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString()).jsonObject

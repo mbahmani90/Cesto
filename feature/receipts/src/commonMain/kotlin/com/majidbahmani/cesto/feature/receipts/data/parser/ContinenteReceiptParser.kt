@@ -14,16 +14,14 @@ import kotlinx.datetime.toInstant
  *
  * Items need the LLM later. Times on the receipt are Portuguese local time, wherever the phone is.
  */
-class ContinenteReceiptParser(
-    private val storeTimeZone: TimeZone = TimeZone.of("Europe/Lisbon"),
-) {
+class ContinenteReceiptParser(private val storeTimeZone: TimeZone = TimeZone.of("Europe/Lisbon")) {
     fun parse(text: String): ParsedReceipt {
         val header = HEADER.find(text)
         return ParsedReceipt(
             purchasedAtMillis = header?.let { purchaseTime(it.groupValues[2], it.groupValues[3]) },
             totalCents = TOTAL.find(text)?.groupValues?.get(1)?.let(::parseEuroCents),
             receiptNumber = header?.groupValues?.get(1)?.replace(WHITESPACE, " "),
-            atcud = ATCUD.find(text)?.groupValues?.get(1),
+            atcud = ATCUD.find(text)?.groupValues?.get(1)
         )
     }
 

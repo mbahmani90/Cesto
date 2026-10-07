@@ -10,24 +10,24 @@ import com.majidbahmani.cesto.feature.receipts.domain.model.ReceiptStatus
 import com.majidbahmani.cesto.feature.receipts.domain.model.SyncFailure
 import com.majidbahmani.cesto.feature.receipts.domain.model.SyncResult
 import com.majidbahmani.cesto.feature.receipts.fake.FakeEmbeddingProvider
+import com.majidbahmani.cesto.feature.receipts.fake.FakeGeminiKeyStore
 import com.majidbahmani.cesto.feature.receipts.fake.FakeGmailApi
 import com.majidbahmani.cesto.feature.receipts.fake.FakeGmailApi.Mail
-import com.majidbahmani.cesto.feature.receipts.fake.FakeGeminiKeyStore
 import com.majidbahmani.cesto.feature.receipts.fake.FakePdfTextExtractor
-import com.majidbahmani.cesto.feature.receipts.fake.FakeReceiptItemExtractor
 import com.majidbahmani.cesto.feature.receipts.fake.FakeReceiptFileStore
+import com.majidbahmani.cesto.feature.receipts.fake.FakeReceiptItemExtractor
 import com.majidbahmani.cesto.feature.receipts.fake.createTestDriver
 import com.majidbahmani.cesto.gmailauth.GmailAuthError
 import com.majidbahmani.cesto.llm.embedding.EmbeddingUnavailableException
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.runTest
 import kotlin.io.encoding.Base64
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runTest
 
 class ReceiptRepositoryImplTest {
 
@@ -53,7 +53,7 @@ class ReceiptRepositoryImplTest {
         embeddings = embeddings,
         geminiKeys = geminiKeys,
         currentTimeMillis = { NOW },
-        maxParallelEmails = maxParallelEmails,
+        maxParallelEmails = maxParallelEmails
     )
 
     private fun pdf(text: String) = Base64.UrlSafe.encode(text.encodeToByteArray())
@@ -345,7 +345,7 @@ class ReceiptRepositoryImplTest {
 
         assertEquals(
             listOf("Leite pasteurizado gordo 1 L. Categoria: Laticinios", "Banana. Categoria: Frutas e Legumes"),
-            embeddings.sentTexts,
+            embeddings.sentTexts
         )
         assertEquals(2, database.productEmbeddingQueries.count().executeAsOne())
     }

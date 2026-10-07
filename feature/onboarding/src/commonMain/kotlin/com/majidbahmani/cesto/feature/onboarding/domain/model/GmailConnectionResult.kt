@@ -9,5 +9,5 @@ enum class GmailConnectionResult {
 
     /** The dialog was confirmed but the Gmail permission was left unticked. */
     PERMISSION_DENIED,
-    FAILED,
+    FAILED
 }

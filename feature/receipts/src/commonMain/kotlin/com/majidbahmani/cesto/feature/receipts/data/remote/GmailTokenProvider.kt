@@ -20,7 +20,7 @@ class GmailNotAuthorizedException(val reason: GmailAuthError) : Exception("Gmail
 class GmailTokenProvider(
     private val authorizer: GmailAuthorizer,
     private val currentTimeMillis: () -> Long,
-    private val cacheMillis: Long = 5 * 60 * 1000L,
+    private val cacheMillis: Long = 5 * 60 * 1000L
 ) {
     private val mutex = Mutex()
     private var cached: String? = null
@@ -35,6 +35,7 @@ class GmailTokenProvider(
                 cached = it
                 cachedAtMillis = now
             }
+
             is GmailAccess.Denied -> {
                 cached = null
                 throw GmailNotAuthorizedException(access.error)

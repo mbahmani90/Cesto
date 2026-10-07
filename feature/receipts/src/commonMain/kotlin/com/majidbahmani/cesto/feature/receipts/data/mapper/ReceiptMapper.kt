@@ -11,5 +11,5 @@ fun ReceiptRow.toDomain(): Receipt = Receipt(
     // Unknown values (an older or newer app version) show as failed instead of crashing.
     status = ReceiptStatus.entries.firstOrNull { it.name == status } ?: ReceiptStatus.FAILED,
     purchasedAtMillis = purchased_at,
-    totalCents = total_cents,
+    totalCents = total_cents
 )

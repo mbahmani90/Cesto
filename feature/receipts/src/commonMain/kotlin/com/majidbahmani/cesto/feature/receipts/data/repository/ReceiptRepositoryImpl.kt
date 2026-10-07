@@ -24,13 +24,13 @@ import com.majidbahmani.cesto.feature.receipts.domain.model.ReceiptStatus
 import com.majidbahmani.cesto.feature.receipts.domain.model.SyncFailure
 import com.majidbahmani.cesto.feature.receipts.domain.model.SyncResult
 import com.majidbahmani.cesto.feature.receipts.domain.repository.ReceiptRepository
+import com.majidbahmani.cesto.llm.GeminiKeyStore
+import com.majidbahmani.cesto.llm.embedding.EmbeddingProvider
+import com.majidbahmani.cesto.llm.embedding.EmbeddingUnavailableException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import com.majidbahmani.cesto.llm.GeminiKeyStore
-import com.majidbahmani.cesto.llm.embedding.EmbeddingProvider
-import com.majidbahmani.cesto.llm.embedding.EmbeddingUnavailableException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -60,7 +60,7 @@ class ReceiptRepositoryImpl(
     private val embeddings: EmbeddingProvider,
     private val geminiKeys: GeminiKeyStore,
     private val currentTimeMillis: () -> Long,
-    private val maxParallelEmails: Int = 4,
+    private val maxParallelEmails: Int = 4
 ) : ReceiptRepository {
 
     /** What one email (or one retry) contributed to the sync. */
@@ -69,8 +69,7 @@ class ReceiptRepositoryImpl(
             Outcome(newReceipts + other.newReceipts, downloaded + other.downloaded, incomplete + other.incomplete)
     }
 
-    override fun observeReceipts(): Flow<List<Receipt>> =
-        local.observeAll().map { rows -> rows.map { it.toDomain() } }
+    override fun observeReceipts(): Flow<List<Receipt>> = local.observeAll().map { rows -> rows.map { it.toDomain() } }
 
     override suspend fun sync(lookBackMonths: Int): SyncResult = try {
         // Read before handling new emails, so this sync's own failures aren't retried twice.
@@ -116,7 +115,7 @@ class ReceiptRepositoryImpl(
         val newReceipts = local.saveCheckedMessage(
             messageId = message.id,
             receivedAtMillis = message.receivedAtMillis() ?: currentTimeMillis(),
-            pdfs = message.pdfAttachments(),
+            pdfs = message.pdfAttachments()
         )
         val pending = local.receiptsOfMessage(message.id).filter { it.status == ReceiptStatus.FOUND.name }
         download(message, pending).copy(newReceipts = newReceipts)

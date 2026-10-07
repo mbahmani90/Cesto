@@ -13,10 +13,10 @@ import com.majidbahmani.cesto.feature.receipts.domain.repository.ReceiptReposito
 import com.majidbahmani.cesto.feature.receipts.domain.usecase.ObserveReceiptsUseCase
 import com.majidbahmani.cesto.feature.receipts.domain.usecase.SyncReceiptsUseCase
 import com.majidbahmani.cesto.feature.receipts.presentation.viewmodel.ReceiptsViewModel
+import kotlin.time.Clock
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
-import kotlin.time.Clock
 
 /** ReceiptFileStore and PdfTextExtractor per platform (Android needs the Koin Android context). */
 internal expect val receiptPlatformModule: Module
@@ -31,7 +31,7 @@ val receiptsModule = module {
         ReceiptLocalDataSource(
             database = get(),
             ioDispatcher = get(IoDispatcher),
-            currentTimeMillis = { Clock.System.now().toEpochMilliseconds() },
+            currentTimeMillis = { Clock.System.now().toEpochMilliseconds() }
         )
     }
     single { ContinenteReceiptParser() }
@@ -46,7 +46,7 @@ val receiptsModule = module {
             itemExtractor = get(),
             embeddings = get(),
             geminiKeys = get(),
-            currentTimeMillis = { Clock.System.now().toEpochMilliseconds() },
+            currentTimeMillis = { Clock.System.now().toEpochMilliseconds() }
         )
     }
     factory { ObserveReceiptsUseCase(repository = get()) }

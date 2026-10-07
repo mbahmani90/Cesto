@@ -11,5 +11,5 @@ enum class SaveKeyResult {
     /** Valid key, but its project hasn't enabled the Gemini API (or the key is restricted). */
     NOT_ALLOWED,
     NO_CONNECTION,
-    FAILED,
+    FAILED
 }

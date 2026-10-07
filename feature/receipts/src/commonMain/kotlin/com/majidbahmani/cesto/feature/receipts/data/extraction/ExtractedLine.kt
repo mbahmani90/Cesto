@@ -12,7 +12,7 @@ data class ExtractedLine(
     /** "4X125G" → 4; otherwise 1. */
     val unitsPerPack: Int,
     val unitPriceCents: Long?,
-    val lineTotalCents: Long,
+    val lineTotalCents: Long
 ) {
     enum class Kind { ITEM, DEPOSIT, DISCOUNT }
 

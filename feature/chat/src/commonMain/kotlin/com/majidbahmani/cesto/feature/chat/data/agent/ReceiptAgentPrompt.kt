@@ -2,12 +2,12 @@ package com.majidbahmani.cesto.feature.chat.data.agent
 
 import com.majidbahmani.cesto.database.CestoDatabase
 import com.majidbahmani.cesto.feature.chat.data.tools.LISBON
+import kotlin.time.Instant
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Instant
 
 /** What the receipts cover: lets the model resolve "last month" and say when data is missing. */
 data class DataCoverage(val first: LocalDate?, val last: LocalDate?, val receipts: Long, val receiptsWithItems: Long)
@@ -17,7 +17,7 @@ class ReceiptAgentPrompt(
     private val database: CestoDatabase,
     private val ioDispatcher: CoroutineDispatcher,
     private val currentTimeMillis: () -> Long,
-    private val timeZone: TimeZone = LISBON,
+    private val timeZone: TimeZone = LISBON
 ) {
     suspend fun build(): String {
         val coverage = withContext(ioDispatcher) {

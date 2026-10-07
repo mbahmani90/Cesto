@@ -5,6 +5,13 @@ import com.majidbahmani.cesto.feature.settings.domain.usecase.ObserveGeminiKeyUs
 import com.majidbahmani.cesto.feature.settings.domain.usecase.RemoveGeminiKeyUseCase
 import com.majidbahmani.cesto.feature.settings.domain.usecase.SaveGeminiKeyUseCase
 import com.majidbahmani.cesto.feature.settings.fake.FakeGeminiKeyRepository
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,13 +23,6 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
@@ -39,7 +39,7 @@ class SettingsViewModelTest {
     private fun TestScope.viewModel() = SettingsViewModel(
         observeGeminiKey = ObserveGeminiKeyUseCase(repository),
         saveGeminiKey = SaveGeminiKeyUseCase(repository),
-        removeGeminiKey = RemoveGeminiKeyUseCase(repository),
+        removeGeminiKey = RemoveGeminiKeyUseCase(repository)
     ).also {
         backgroundScope.launch { it.uiState.collect() }
         runCurrent()

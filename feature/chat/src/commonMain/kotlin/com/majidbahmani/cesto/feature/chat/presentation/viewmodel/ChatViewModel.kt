@@ -18,15 +18,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ChatViewModel(
-    observeAssistantReady: ObserveAssistantReadyUseCase,
-    private val askQuestion: AskQuestionUseCase,
-) : ViewModel() {
+class ChatViewModel(observeAssistantReady: ObserveAssistantReadyUseCase, private val askQuestion: AskQuestionUseCase) : ViewModel() {
 
     private data class ScreenState(
         val messages: List<ChatMessage> = emptyList(),
         val input: String = "",
-        val thinking: ThinkingStep? = null,
+        val thinking: ThinkingStep? = null
     )
 
     private val screenState = MutableStateFlow(ScreenState())
@@ -60,7 +57,7 @@ class ChatViewModel(
             it.copy(
                 messages = it.messages + ChatMessage.Question(nextId++, question),
                 input = "",
-                thinking = ThinkingStep.THINKING,
+                thinking = ThinkingStep.THINKING
             )
         }
         askJob = viewModelScope.launch {
@@ -72,6 +69,7 @@ class ChatViewModel(
                     conversation = result.conversation
                     ChatMessage.Answer(nextId++, result.text, result.receiptIds.size)
                 }
+
                 // The failed question stays out of the conversation: asking again starts it cleanly.
                 is AskResult.Failed -> ChatMessage.Failure(nextId++, result.reason)
             }

@@ -1,10 +1,10 @@
 package com.majidbahmani.cesto.feature.receipts.data.local
 
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertFailsWith
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runTest
 
 class IosPdfTextExtractorTest {
 
@@ -20,7 +20,7 @@ class IosPdfTextExtractorTest {
             "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
             "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
             "<< /Length ${content.length} >>\nstream\n$content\nendstream",
-            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
         )
         val pdf = StringBuilder("%PDF-1.4\n")
         val offsets = objects.mapIndexed { index, body ->

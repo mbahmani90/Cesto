@@ -1,11 +1,15 @@
 package com.majidbahmani.cesto.feature.chat.data.tools
 
 import com.majidbahmani.cesto.database.CestoDatabase
-import com.majidbahmani.cesto.feature.chat.domain.model.ToolCall
 import com.majidbahmani.cesto.database.toBlob
+import com.majidbahmani.cesto.feature.chat.domain.model.ToolCall
 import com.majidbahmani.cesto.feature.chat.fake.FakeEmbeddingProvider
 import com.majidbahmani.cesto.feature.chat.fake.createTestDriver
 import com.majidbahmani.cesto.llm.embedding.EmbeddingUnavailableException
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDateTime
@@ -22,15 +26,12 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 /** Invented receipts in an in-memory database: September has two read receipts and one not read yet. */
 class SqlReceiptToolsTest {
 
     private val database = CestoDatabase(createTestDriver())
+
     // 2-number vectors: x = "dairy", y = "fruit".
     private val embeddings = FakeEmbeddingProvider(mapOf("dairy" to floatArrayOf(1f, 0f), "fruit" to floatArrayOf(0f, 1f)))
     private val tools = SqlReceiptTools(database, Dispatchers.Unconfined, embeddings)
@@ -67,7 +68,13 @@ class SqlReceiptToolsTest {
 
     @Test
     fun semanticSearch_respectsTheLimit() = runTest {
-        val output = run("semanticSearch", buildJsonObject { put("query", "dairy"); put("limit", 1) })
+        val output = run(
+            "semanticSearch",
+            buildJsonObject {
+                put("query", "dairy")
+                put("limit", 1)
+            }
+        )
 
         assertEquals(1, output["products"]!!.jsonArray.size)
     }
@@ -103,7 +110,15 @@ class SqlReceiptToolsTest {
 
     @Test
     fun findProducts_matchesAnyKeyword_inNameOrCategory_caseInsensitive() = runTest {
-        val output = run("findProducts", buildJsonObject { putJsonArray("keywords") { add("IOGURT"); add("frutas") } })
+        val output = run(
+            "findProducts",
+            buildJsonObject {
+                putJsonArray("keywords") {
+                    add("IOGURT")
+                    add("frutas")
+                }
+            }
+        )
 
         val names = output["products"]!!.jsonArray.map { it.jsonObject["name"]!!.jsonPrimitive.content }
         assertEquals(setOf("Iogurte grego natural 4x125 g", "Iogurte liquido morango", "Banana"), names.toSet())
@@ -145,7 +160,13 @@ class SqlReceiptToolsTest {
 
     @Test
     fun sumSpending_withoutProducts_isWhatWasPaid_includingUnreadReceipts() = runTest {
-        val output = run("sumSpending", buildJsonObject { put("from", "2026-09-01"); put("to", "2026-09-30") })
+        val output = run(
+            "sumSpending",
+            buildJsonObject {
+                put("from", "2026-09-01")
+                put("to", "2026-09-30")
+            }
+        )
 
         assertEquals(38.95, output["euros"]!!.jsonPrimitive.double) // 10,00 + 5,50 + 23,45
         assertEquals(3, output["receipts"]!!.jsonPrimitive.long)
@@ -163,7 +184,12 @@ class SqlReceiptToolsTest {
     fun topProducts_bySpending() = runTest {
         val output = run(
             "topProducts",
-            buildJsonObject { put("from", "2026-01-01"); put("to", "2026-12-31"); put("by", "spending"); put("limit", 2.0) },
+            buildJsonObject {
+                put("from", "2026-01-01")
+                put("to", "2026-12-31")
+                put("by", "spending")
+                put("limit", 2.0)
+            }
         )
 
         val first = output["products"]!!.jsonArray.first().jsonObject
@@ -174,7 +200,15 @@ class SqlReceiptToolsTest {
 
     @Test
     fun listReceipts_newestFirst_andSaysWhichAreNotRead() = runTest {
-        val result = tools.run(ToolCall("listReceipts", buildJsonObject { put("from", "2026-09-01"); put("to", "2026-09-30") }))
+        val result = tools.run(
+            ToolCall(
+                "listReceipts",
+                buildJsonObject {
+                    put("from", "2026-09-01")
+                    put("to", "2026-09-30")
+                }
+            )
+        )
 
         assertEquals(listOf(sept30Late, sept20Unread, sept10), result.receiptIds)
         val receipts = result.output["receipts"]!!.jsonArray.map { it.jsonObject }
@@ -184,14 +218,36 @@ class SqlReceiptToolsTest {
 
     @Test
     fun badDates_andUnknownTools_areErrorsTheModelCanRead() = runTest {
-        assertTrue("error" in run("listReceipts", buildJsonObject { put("from", "last month"); put("to", "2026-09-30") }))
-        assertTrue("error" in run("listReceipts", buildJsonObject { put("from", "2026-09-30"); put("to", "2026-09-01") }))
+        assertTrue(
+            "error" in run(
+                "listReceipts",
+                buildJsonObject {
+                    put("from", "last month")
+                    put("to", "2026-09-30")
+                }
+            )
+        )
+        assertTrue(
+            "error" in run(
+                "listReceipts",
+                buildJsonObject {
+                    put("from", "2026-09-30")
+                    put("to", "2026-09-01")
+                }
+            )
+        )
         assertTrue("error" in run("deleteEverything", JsonObject(emptyMap())))
     }
 
     @Test
     fun noData_isNotAnError() = runTest {
-        val output = run("sumSpending", buildJsonObject { put("from", "2020-01-01"); put("to", "2020-12-31") })
+        val output = run(
+            "sumSpending",
+            buildJsonObject {
+                put("from", "2020-01-01")
+                put("to", "2020-12-31")
+            }
+        )
 
         assertEquals(0.0, output["euros"]!!.jsonPrimitive.double)
         assertNull(output["error"])
@@ -207,7 +263,7 @@ class SqlReceiptToolsTest {
             put("productIds", productIds)
             put("from", from)
             put("to", to)
-        },
+        }
     )
 
     private fun at(year: Int, month: Int, day: Int, hour: Int, minute: Int): Long =

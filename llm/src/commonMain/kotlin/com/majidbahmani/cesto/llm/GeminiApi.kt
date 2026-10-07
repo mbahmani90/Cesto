@@ -7,28 +7,28 @@ import com.majidbahmani.cesto.llm.dto.GenerationConfigDto
 import com.majidbahmani.cesto.llm.dto.PartDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.timeout
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.float
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
-import io.ktor.client.plugins.ClientRequestException
-import io.ktor.client.plugins.ResponseException
-import io.ktor.client.request.get
-import io.ktor.client.request.header
-import io.ktor.client.request.parameter
-import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.CancellationException
 
 /** Outcome of checking a key with one small Gemini request. */
 enum class KeyCheck {
@@ -44,7 +44,7 @@ enum class KeyCheck {
     NO_CONNECTION,
 
     /** Any other answer (429 quota, 5xx). */
-    FAILED,
+    FAILED
 }
 
 /**
@@ -84,7 +84,7 @@ class GeminiApi(private val client: HttpClient) {
         systemInstruction: String,
         prompt: String,
         responseSchema: JsonObject,
-        model: String = EXTRACTION_MODEL,
+        model: String = EXTRACTION_MODEL
     ): String {
         val response: GenerateContentResponseDto = client.post(BASE_URL + "models/$model:generateContent") {
             header(API_KEY_HEADER, key)
@@ -101,9 +101,9 @@ class GeminiApi(private val client: HttpClient) {
                     generationConfig = GenerationConfigDto(
                         temperature = 0.0, // extraction: the same receipt should give the same items
                         responseMimeType = "application/json",
-                        responseSchema = responseSchema,
-                    ),
-                ),
+                        responseSchema = responseSchema
+                    )
+                )
             )
         }.body()
         val candidate = response.candidates.firstOrNull()
@@ -121,7 +121,7 @@ class GeminiApi(private val client: HttpClient) {
         systemInstruction: String,
         contents: List<JsonObject>,
         functionDeclarations: JsonArray,
-        model: String = CHAT_MODEL,
+        model: String = CHAT_MODEL
     ): JsonObject {
         val body = buildJsonObject {
             putJsonArray("contents") { contents.forEach { add(it) } }
@@ -153,7 +153,7 @@ class GeminiApi(private val client: HttpClient) {
         key: String,
         texts: List<String>,
         model: String = EMBEDDING_MODEL,
-        dimensions: Int = EMBEDDING_DIMENSIONS,
+        dimensions: Int = EMBEDDING_DIMENSIONS
     ): List<FloatArray> {
         if (texts.isEmpty()) return emptyList()
         val body = buildJsonObject {
@@ -166,7 +166,7 @@ class GeminiApi(private val client: HttpClient) {
                                 putJsonArray("parts") { add(buildJsonObject { put("text", text) }) }
                             }
                             put("outputDimensionality", dimensions)
-                        },
+                        }
                     )
                 }
             }
@@ -192,6 +192,7 @@ class GeminiApi(private val client: HttpClient) {
 
         /** Cheaper, separate capacity: used when the main model is overloaded (503). */
         const val FALLBACK_MODEL = "gemini-3.5-flash-lite"
+
         /** Text embeddings for semantic search (checked in Google's docs, Oct 2026: gemini-embedding-001 is legacy). */
         const val EMBEDDING_MODEL = "gemini-embedding-2"
 

@@ -2,13 +2,13 @@ package com.majidbahmani.cesto.feature.settings.domain.usecase
 
 import com.majidbahmani.cesto.feature.settings.domain.model.SaveKeyResult
 import com.majidbahmani.cesto.feature.settings.fake.FakeGeminiKeyRepository
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 
 class GeminiKeyUseCasesTest {
 

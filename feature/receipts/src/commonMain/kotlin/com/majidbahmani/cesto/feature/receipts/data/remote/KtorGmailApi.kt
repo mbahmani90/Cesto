@@ -16,10 +16,7 @@ import io.ktor.http.encodeURLPathPart
  * Every request carries a fresh access token from [tokens]; the token never leaves the phone
  * except to Google.
  */
-class KtorGmailApi(
-    private val client: HttpClient,
-    private val tokens: GmailTokenProvider,
-) : GmailApi {
+class KtorGmailApi(private val client: HttpClient, private val tokens: GmailTokenProvider) : GmailApi {
 
     override suspend fun listMessages(query: String, pageToken: String?, maxResults: Int): MessageListResponseDto =
         client.get(GmailApi.BASE_URL + "messages") {
@@ -29,18 +26,16 @@ class KtorGmailApi(
             parameter("maxResults", maxResults)
         }.body()
 
-    override suspend fun getMessage(id: String): MessageDto =
-        client.get(GmailApi.BASE_URL + "messages/${id.encodeURLPathPart()}") {
-            authorize()
-            parameter("format", "full")
-        }.body()
+    override suspend fun getMessage(id: String): MessageDto = client.get(GmailApi.BASE_URL + "messages/${id.encodeURLPathPart()}") {
+        authorize()
+        parameter("format", "full")
+    }.body()
 
-    override suspend fun getAttachment(messageId: String, attachmentId: String): MessagePartBodyDto =
-        client.get(
-            GmailApi.BASE_URL + "messages/${messageId.encodeURLPathPart()}/attachments/${attachmentId.encodeURLPathPart()}",
-        ) {
-            authorize()
-        }.body()
+    override suspend fun getAttachment(messageId: String, attachmentId: String): MessagePartBodyDto = client.get(
+        GmailApi.BASE_URL + "messages/${messageId.encodeURLPathPart()}/attachments/${attachmentId.encodeURLPathPart()}"
+    ) {
+        authorize()
+    }.body()
 
     private suspend fun HttpRequestBuilder.authorize() {
         bearerAuth(tokens.accessToken())

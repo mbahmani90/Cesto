@@ -24,7 +24,7 @@ internal val appModules = listOf(
     onboardingModule,
     receiptsModule,
     settingsModule,
-    chatModule,
+    chatModule
 )
 
 /** Bindings created by the platform apps before Koin starts (they need the platform SDKs). */
@@ -33,10 +33,7 @@ internal fun platformServicesModule(gmailAuthorizer: GmailAuthorizer): Module = 
 }
 
 /** Starts Koin once per process: from the Android Application and the iOS App init. */
-fun initKoin(
-    gmailAuthorizer: GmailAuthorizer,
-    appDeclaration: KoinAppDeclaration = {},
-): KoinApplication = startKoin {
+fun initKoin(gmailAuthorizer: GmailAuthorizer, appDeclaration: KoinAppDeclaration = {}): KoinApplication = startKoin {
     appDeclaration()
     modules(listOf(platformServicesModule(gmailAuthorizer)) + appModules)
 }

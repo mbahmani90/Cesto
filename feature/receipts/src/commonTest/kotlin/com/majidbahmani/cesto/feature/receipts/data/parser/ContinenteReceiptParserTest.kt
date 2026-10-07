@@ -1,9 +1,9 @@
 package com.majidbahmani.cesto.feature.receipts.data.parser
 
-import kotlinx.datetime.TimeZone
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlinx.datetime.TimeZone
 
 class ContinenteReceiptParserTest {
 
@@ -14,7 +14,7 @@ class ContinenteReceiptParserTest {
         purchasedAtMillis = 1_791_231_720_000,
         totalCents = 188,
         receiptNumber = "FS ABC123/000001",
-        atcud = "ABCD1234-000001",
+        atcud = "ABCD1234-000001"
     )
 
     @Test
@@ -31,7 +31,7 @@ class ContinenteReceiptParserTest {
     fun purchaseTime_isPortugueseLocalTime_notThePhones() {
         assertEquals(
             ContinenteReceiptParser(TimeZone.of("Europe/Lisbon")).parse(PDFBOX_RECEIPT),
-            ContinenteReceiptParser().parse(PDFBOX_RECEIPT),
+            ContinenteReceiptParser().parse(PDFBOX_RECEIPT)
         )
         // In winter Portugal is UTC+0: 15/01/2026 10:00 = 10:00 UTC.
         val winter = parser.parse("Nro:FS X1/2 15/01/2026 10:00 |")

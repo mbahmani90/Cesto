@@ -13,10 +13,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class OnboardingViewModel(
-    private val checkGmailConnection: CheckGmailConnectionUseCase,
-    private val connectGmail: ConnectGmailUseCase,
-) : ViewModel() {
+class OnboardingViewModel(private val checkGmailConnection: CheckGmailConnectionUseCase, private val connectGmail: ConnectGmailUseCase) :
+    ViewModel() {
 
     // Two sources change the state (start check and button), so it's assigned, not derived (doc 16).
     private val _uiState = MutableStateFlow(OnboardingUiState())

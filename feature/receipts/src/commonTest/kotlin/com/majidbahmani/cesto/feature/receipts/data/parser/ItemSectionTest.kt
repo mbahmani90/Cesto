@@ -21,7 +21,8 @@ class ItemSectionTest {
     @Test
     fun withoutDiscount_theSectionEndsAtTotalAPagar() {
         // Most receipts: no SUBTOTAL line, the items go straight to the total.
-        val text = "Nro:FS X1/2 14/03/2026 10:15 | NIF:PT123456789\nIVA DESCRICAO VALOR\n(A) PAO 0,35\nTOTAL A PAGAR 0,35\nCartao Cliente 0,35"
+        val text = "Nro:FS X1/2 14/03/2026 10:15 | NIF:PT123456789\nIVA DESCRICAO VALOR\n(A) PAO 0,35\n" +
+            "TOTAL A PAGAR 0,35\nCartao Cliente 0,35"
 
         assertEquals("(A) PAO 0,35", itemSection(text))
         assertNull(subtotalCents(text))

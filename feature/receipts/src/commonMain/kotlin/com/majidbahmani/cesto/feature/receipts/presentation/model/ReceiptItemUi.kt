@@ -10,5 +10,5 @@ data class ReceiptItemUi(
     val fileName: String,
     val status: ReceiptStatus,
     /** "4,52 €" once the text is read; the row shows the status until then. */
-    val totalText: String? = null,
+    val totalText: String? = null
 )

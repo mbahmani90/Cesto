@@ -41,7 +41,7 @@ enum class AskFailure {
 
     /** The model kept calling tools past the safety limit. */
     TOO_MANY_STEPS,
-    FAILED,
+    FAILED
 }
 
 sealed interface AskResult {

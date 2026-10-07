@@ -19,8 +19,7 @@ fun itemSection(text: String): String? {
 }
 
 /** "SUBTOTAL 5,36" in cents (only on receipts with a discount): the item lines must add up to it. */
-fun subtotalCents(text: String): Long? =
-    SUBTOTAL.find(text)?.groupValues?.get(1)?.replace(".", "")?.replace(",", "")?.toLongOrNull()
+fun subtotalCents(text: String): Long? = SUBTOTAL.find(text)?.groupValues?.get(1)?.replace(".", "")?.replace(",", "")?.toLongOrNull()
 
 private val TOTAL_LINES = listOf("SUBTOTAL", "TOTAL A PAGAR")
 private val LONG_NUMBER = Regex("""\d{9,}""")

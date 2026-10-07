@@ -28,7 +28,7 @@ private val EMAIL = Regex("""[^\s@]+@[^\s@]+\.[^\s@]+""")
 private fun encodeQueryValue(value: String): String = buildString {
     value.encodeToByteArray().forEach { byte ->
         val c = byte.toInt().toChar()
-        if (c.isLetterOrDigit() && c.code < 128 || c in "-._~") {
+        if ((c.isLetterOrDigit() && c.code < 128) || c in "-._~") {
             append(c)
         } else {
             append('%').append((byte.toInt() and 0xFF).toString(16).uppercase().padStart(2, '0'))

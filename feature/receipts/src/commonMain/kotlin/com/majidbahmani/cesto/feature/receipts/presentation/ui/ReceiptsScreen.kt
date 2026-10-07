@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -59,10 +59,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-internal fun ReceiptsRoute(
-    contentPadding: PaddingValues = PaddingValues(),
-    viewModel: ReceiptsViewModel = koinViewModel(),
-) {
+internal fun ReceiptsRoute(contentPadding: PaddingValues = PaddingValues(), viewModel: ReceiptsViewModel = koinViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     ReceiptsScreen(uiState = uiState, onRefresh = viewModel::onRefresh, contentPadding = contentPadding)
 }
@@ -74,15 +71,17 @@ internal fun ReceiptsScreen(
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
     /** Space the floating bottom bar covers; the list scrolls behind it and ends above it. */
-    contentPadding: PaddingValues = PaddingValues(),
+    contentPadding: PaddingValues = PaddingValues()
 ) {
     val bottom = contentPadding.calculateBottomPadding()
     Surface(modifier = modifier.fillMaxSize()) {
         // Bottom inset comes from contentPadding (it already includes the system navigation bar).
-        Column(modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))) {
+        Column(
+            modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
+        ) {
             Column(
                 modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 CestoScreenTitle(stringResource(Res.string.receipts_title))
                 // Hidden until the database has answered, so "0 receipts" never flashes.
@@ -90,7 +89,7 @@ internal fun ReceiptsScreen(
                     Text(
                         text = pluralStringResource(Res.plurals.receipts_count, uiState.receipts.size, uiState.receipts.size),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -99,13 +98,15 @@ internal fun ReceiptsScreen(
             PullToRefreshBox(
                 isRefreshing = uiState.isSyncing,
                 onRefresh = onRefresh,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize()
             ) {
                 when {
                     uiState.isLoading -> Box(Modifier.fillMaxSize().padding(bottom = bottom), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
+
                     uiState.receipts.isEmpty() -> EmptyContent(isSyncing = uiState.isSyncing, bottom = bottom)
+
                     else -> ReceiptList(uiState.receipts, bottom = bottom)
                 }
             }
@@ -118,7 +119,7 @@ private fun ReceiptList(receipts: List<ReceiptItemUi>, bottom: Dp) {
     LazyColumn(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp + bottom),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize()
     ) {
         items(items = receipts, key = { it.id }) { receipt -> ReceiptRow(receipt) }
     }
@@ -129,12 +130,12 @@ private fun ReceiptRow(receipt: ReceiptItemUi) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = MaterialTheme.shapes.large,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(text = receipt.dateText, style = MaterialTheme.typography.titleMedium)
@@ -143,7 +144,7 @@ private fun ReceiptRow(receipt: ReceiptItemUi) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
             val total = receipt.totalText
@@ -161,9 +162,21 @@ private fun StatusChip(status: ReceiptStatus) {
     val colors = MaterialTheme.colorScheme
     val (text, container, content) = when (status) {
         ReceiptStatus.FOUND -> Triple(stringResource(Res.string.receipts_status_found), colors.surfaceVariant, colors.onSurfaceVariant)
-        ReceiptStatus.DOWNLOADED -> Triple(stringResource(Res.string.receipts_status_downloaded), colors.secondaryContainer, colors.onSecondaryContainer)
-        ReceiptStatus.TEXT_EXTRACTED -> Triple(stringResource(Res.string.receipts_status_text_extracted), colors.secondaryContainer, colors.onSecondaryContainer)
+
+        ReceiptStatus.DOWNLOADED -> Triple(
+            stringResource(Res.string.receipts_status_downloaded),
+            colors.secondaryContainer,
+            colors.onSecondaryContainer
+        )
+
+        ReceiptStatus.TEXT_EXTRACTED -> Triple(
+            stringResource(Res.string.receipts_status_text_extracted),
+            colors.secondaryContainer,
+            colors.onSecondaryContainer
+        )
+
         ReceiptStatus.READY -> Triple(stringResource(Res.string.receipts_status_ready), colors.primary, colors.onPrimary)
+
         ReceiptStatus.FAILED -> Triple(stringResource(Res.string.receipts_status_failed), colors.errorContainer, colors.onErrorContainer)
     }
     Surface(color = container, contentColor = content, shape = MaterialTheme.shapes.small) {
@@ -176,13 +189,13 @@ private fun EmptyContent(isSyncing: Boolean, bottom: Dp) {
     // Scrollable so pull-to-refresh also works on an empty list.
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + bottom),
+        contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + bottom)
     ) {
         item {
             Text(
                 text = stringResource(if (isSyncing) Res.string.receipts_syncing else Res.string.receipts_empty),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -194,18 +207,20 @@ private fun SyncProblemBanner(problem: SyncProblem, onRetry: () -> Unit) {
         color = MaterialTheme.colorScheme.errorContainer,
         contentColor = MaterialTheme.colorScheme.onErrorContainer,
         shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
     ) {
         Row(modifier = Modifier.padding(start = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = when (problem) {
                     SyncProblem.NotAuthorized -> stringResource(Res.string.receipts_error_not_authorized)
+
                     SyncProblem.Failed -> stringResource(Res.string.receipts_error_failed)
+
                     is SyncProblem.Incomplete ->
                         pluralStringResource(Res.plurals.receipts_error_incomplete, problem.count, problem.count)
                 },
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f).padding(vertical = 12.dp),
+                modifier = Modifier.weight(1f).padding(vertical = 12.dp)
             )
             TextButton(onClick = onRetry) { Text(stringResource(Res.string.receipts_retry)) }
         }
@@ -218,13 +233,13 @@ internal fun DemoReceiptsScreen(modifier: Modifier = Modifier) {
     Surface(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing).padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             CestoScreenTitle(stringResource(Res.string.receipts_title))
             Text(
                 text = stringResource(Res.string.receipts_demo),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -234,7 +249,7 @@ private val previewReceipts = listOf(
     ReceiptItemUi(4, "05/10/2026 21:22", "Fatura_Cartao_Continente_20261005_2122.pdf", ReceiptStatus.TEXT_EXTRACTED, "4,52 €"),
     ReceiptItemUi(3, "03/10/2026 19:29", "Fatura_Cartao_Continente_20261003_1929.pdf", ReceiptStatus.DOWNLOADED),
     ReceiptItemUi(2, "28/09/2026 18:04", "Fatura_Cartao_Continente_20260928_1804.pdf", ReceiptStatus.FOUND),
-    ReceiptItemUi(1, "21/09/2026 10:47", "Fatura_Cartao_Continente_20260921_1047.pdf", ReceiptStatus.FAILED),
+    ReceiptItemUi(1, "21/09/2026 10:47", "Fatura_Cartao_Continente_20260921_1047.pdf", ReceiptStatus.FAILED)
 )
 
 @Preview
@@ -251,7 +266,7 @@ private fun ReceiptsScreenErrorDarkPreview() {
     CestoTheme(darkTheme = true) {
         ReceiptsScreen(
             uiState = ReceiptsUiState(isLoading = false, receipts = previewReceipts, syncProblem = SyncProblem.Incomplete(2)),
-            onRefresh = {},
+            onRefresh = {}
         )
     }
 }

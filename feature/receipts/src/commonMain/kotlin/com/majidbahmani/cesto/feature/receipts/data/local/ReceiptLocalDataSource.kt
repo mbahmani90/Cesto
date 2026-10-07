@@ -19,7 +19,7 @@ import kotlinx.coroutines.withContext
 class ReceiptLocalDataSource(
     private val database: CestoDatabase,
     private val ioDispatcher: CoroutineDispatcher,
-    private val currentTimeMillis: () -> Long,
+    private val currentTimeMillis: () -> Long
 ) {
     private val receipts = database.receiptQueries
     private val messages = database.gmailMessageQueries
@@ -68,7 +68,7 @@ class ReceiptLocalDataSource(
             total_cents = parsed.totalCents,
             receipt_number = parsed.receiptNumber,
             atcud = parsed.atcud,
-            id = id,
+            id = id
         )
     }
 
@@ -95,7 +95,7 @@ class ReceiptLocalDataSource(
                     quantity = line.quantity,
                     unit = line.unit.name,
                     unit_price_cents = line.unitPriceCents,
-                    line_total_cents = line.lineTotalCents,
+                    line_total_cents = line.lineTotalCents
                 )
             }
             receipts.markReady(receiptId)

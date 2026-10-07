@@ -4,31 +4,29 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.withContext
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.withContext
 
 /**
  * Encrypts the Gemini key with an AES-GCM key that lives in the Android Keystore (it never leaves it)
  * and keeps only the ciphertext in app-private preferences, which are excluded from backup.
  */
-class AndroidGeminiKeyStore(
-    context: Context,
-    private val ioDispatcher: CoroutineDispatcher,
-) : GeminiKeyStore {
+class AndroidGeminiKeyStore(context: Context, private val ioDispatcher: CoroutineDispatcher) : GeminiKeyStore {
 
     private val preferences = context.applicationContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
 
     // Read from disk on first collection (on the IO dispatcher), then kept in memory and updated on save/clear.
     private val state = MutableStateFlow<String?>(null)
+
     @Volatile private var loaded = false
 
     override val key: Flow<String?> = flow {
@@ -75,7 +73,7 @@ class AndroidGeminiKeyStore(
                     .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                     .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                     .setKeySize(256)
-                    .build(),
+                    .build()
             )
         }.generateKey()
     }

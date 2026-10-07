@@ -16,5 +16,5 @@ data class SettingsUiState(
     /** "Test and save" running. */
     val isTesting: Boolean = false,
     /** Result of the last "Test and save" (success or why it failed); cleared by typing. */
-    val feedback: SaveKeyResult? = null,
+    val feedback: SaveKeyResult? = null
 )
