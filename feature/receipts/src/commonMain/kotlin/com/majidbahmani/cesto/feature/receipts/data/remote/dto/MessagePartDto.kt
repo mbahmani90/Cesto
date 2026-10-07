@@ -10,5 +10,5 @@ data class MessagePartDto(
     val filename: String? = null,
     val headers: List<HeaderDto> = emptyList(),
     val body: MessagePartBodyDto? = null,
-    val parts: List<MessagePartDto> = emptyList(),
+    val parts: List<MessagePartDto> = emptyList()
 )

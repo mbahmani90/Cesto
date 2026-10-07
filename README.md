@@ -1,5 +1,7 @@
 # Cesto
 
+[![CI](https://github.com/mbahmani90/Cesto/actions/workflows/ci.yml/badge.svg)](https://github.com/mbahmani90/Cesto/actions/workflows/ci.yml)
+
 **Ask your grocery receipts anything.**
 
 Cesto is a Kotlin Multiplatform app (Android + iOS) that finds your **Continente** grocery receipts in
@@ -88,7 +90,7 @@ module; everything else only knows what it needs.
 ### Rules
 
 - **Features never depend on each other.** `:app` connects them with navigation lambdas
-  (`onConnected`, `onTryDemo`); each feature owns its route.
+  (`onConnect`, `onTryDemo`); each feature owns its route.
 - **Floating pill bottom bar in `:app`** (`TopLevelDestination`): tabs draw behind it and get a `contentPadding`
   so their last item ends above it. The selected tab is derived from the back stack, each
   tab keeps its state when you switch, and back goes to **Ask**, then closes the app. Onboarding and demo
@@ -188,6 +190,19 @@ onboarding repository and ViewModel, the Gmail REST client (`MockEngine`) and me
 database schema, migrations and queries (in-memory SQLite), item extraction, the agent loop (scripted fake
 model), the SQL tools, product vectors and semantic search, the Gemini request/response mapping, the ViewModels, the HTTP client, and the Koin
 graph (`AppModulesTest`, because Koin only reports missing bindings at runtime).
+
+**CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)), on every PR and every push to `main`:
+**Changes** → **Build** (debug APK) → **Unit tests**, **Android Lint** and **Code style** in parallel → **CI result**,
+the single check for branch protection. No secrets are needed: CI never calls Gmail or Gemini. Changes to
+Markdown, `art/` or the license skip the build. The iOS tests run locally for now.
+
+Code style is ktlint (Android Studio style) with the Compose rules, through Spotless:
+
+```bash
+./gradlew spotlessApply    # format before committing
+./gradlew spotlessCheck    # what CI runs
+./gradlew :androidApp:lintDebug
+```
 
 ## Design decisions
 

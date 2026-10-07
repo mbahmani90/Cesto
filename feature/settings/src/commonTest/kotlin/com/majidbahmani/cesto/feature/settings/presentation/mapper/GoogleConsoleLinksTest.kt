@@ -11,7 +11,7 @@ class GoogleConsoleLinksTest {
     fun email_isAddedAsAuthuser_encoded() {
         assertEquals(
             "https://aistudio.google.com/apikey?authuser=name.surname%2Bkeys%40gmail.com",
-            withGoogleAccount(AI_STUDIO_KEYS_URL, "  name.surname+keys@gmail.com "),
+            withGoogleAccount(AI_STUDIO_KEYS_URL, "  name.surname+keys@gmail.com ")
         )
     }
 

@@ -12,9 +12,7 @@ import platform.PDFKit.PDFDocument
 
 /** PDFKit (built into iOS), called from Kotlin/Native: no Swift needed. */
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
-class IosPdfTextExtractor(
-    private val defaultDispatcher: CoroutineDispatcher,
-) : PdfTextExtractor {
+class IosPdfTextExtractor(private val defaultDispatcher: CoroutineDispatcher) : PdfTextExtractor {
 
     override suspend fun extractText(pdf: ByteArray): String = withContext(defaultDispatcher) {
         require(pdf.isNotEmpty()) { "empty PDF" }

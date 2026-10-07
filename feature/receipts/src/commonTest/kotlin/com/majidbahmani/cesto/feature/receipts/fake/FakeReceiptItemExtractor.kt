@@ -18,13 +18,20 @@ class FakeReceiptItemExtractor(var lines: List<ExtractedLine> = listOf(milk, ban
     }
 
     companion object {
-        val milk = ExtractedLine(ExtractedLine.Kind.ITEM, "LEITE PAST GORDO 1L", "Leite pasteurizado gordo 1 L", "Laticinios", 1.0, ExtractedLine.Unit.UNIT, 1, 119, 119)
+        val milk = ExtractedLine(
+            ExtractedLine.Kind.ITEM, "LEITE PAST GORDO 1L", "Leite pasteurizado gordo 1 L", "Laticinios",
+            1.0, ExtractedLine.Unit.UNIT, 1, 119, 119
+        )
         val banana = ExtractedLine(ExtractedLine.Kind.ITEM, "BANANA", "Banana", "Frutas e Legumes", 0.76, ExtractedLine.Unit.KG, 1, 119, 90)
     }
 }
 
 class FakeGeminiKeyStore(initial: String? = "AIza-test") : com.majidbahmani.cesto.llm.GeminiKeyStore {
     override val key = kotlinx.coroutines.flow.MutableStateFlow(initial)
-    override suspend fun save(key: String) { this.key.value = key }
-    override suspend fun clear() { key.value = null }
+    override suspend fun save(key: String) {
+        this.key.value = key
+    }
+    override suspend fun clear() {
+        key.value = null
+    }
 }

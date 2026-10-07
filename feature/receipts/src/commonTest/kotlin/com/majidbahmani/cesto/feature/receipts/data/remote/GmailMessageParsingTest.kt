@@ -1,11 +1,11 @@
 package com.majidbahmani.cesto.feature.receipts.data.remote
 
 import com.majidbahmani.cesto.feature.receipts.data.remote.dto.MessageDto
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.serialization.json.Json
 
 class GmailMessageParsingTest {
 
@@ -17,9 +17,9 @@ class GmailMessageParsingTest {
         assertEquals(
             listOf(
                 PdfAttachmentRef(partId = "0.1", attachmentId = "ANGjdJ_b", fileName = "talao-2.PDF", sizeBytes = 2048),
-                PdfAttachmentRef(partId = "1", attachmentId = "ANGjdJ_a", fileName = "fatura.pdf", sizeBytes = 40123),
+                PdfAttachmentRef(partId = "1", attachmentId = "ANGjdJ_a", fileName = "fatura.pdf", sizeBytes = 40123)
             ),
-            message.pdfAttachments(),
+            message.pdfAttachments()
         )
     }
 

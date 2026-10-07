@@ -32,8 +32,8 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -90,7 +90,7 @@ import org.koin.compose.viewmodel.koinViewModel
 internal fun ChatRoute(
     onOpenSettings: () -> Unit,
     contentPadding: PaddingValues = PaddingValues(),
-    viewModel: ChatViewModel = koinViewModel(),
+    viewModel: ChatViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     ChatScreen(
@@ -100,7 +100,7 @@ internal fun ChatRoute(
         onSuggestion = viewModel::onSuggestion,
         onNewChat = viewModel::onNewChat,
         onOpenSettings = onOpenSettings,
-        contentPadding = contentPadding,
+        contentPadding = contentPadding
     )
 }
 
@@ -114,7 +114,7 @@ internal fun ChatScreen(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     /** Space the floating bottom bar covers. */
-    contentPadding: PaddingValues = PaddingValues(),
+    contentPadding: PaddingValues = PaddingValues()
 ) {
     // The input sits above the pill, or above the keyboard when it's open (it covers the pill).
     val bottom = maxOf(contentPadding.calculateBottomPadding(), WindowInsets.ime.asPaddingValues().calculateBottomPadding())
@@ -122,11 +122,11 @@ internal fun ChatScreen(
         Column(
             modifier = Modifier
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
-                .padding(bottom = bottom),
+                .padding(bottom = bottom)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 24.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(Modifier.weight(1f)) { CestoScreenTitle(stringResource(Res.string.chat_title)) }
                 if (uiState.messages.isNotEmpty()) {
@@ -134,8 +134,11 @@ internal fun ChatScreen(
                 }
             }
             when (uiState.isReady) {
-                null -> Unit // key store not read yet: a blink, no spinner
+                null -> Unit
+
+                // key store not read yet: a blink, no spinner
                 false -> NoKey(onOpenSettings, Modifier.padding(horizontal = 24.dp))
+
                 true -> {
                     Box(Modifier.weight(1f).fillMaxWidth()) {
                         if (uiState.messages.isEmpty()) {
@@ -155,13 +158,13 @@ internal fun ChatScreen(
 private fun Suggestions(onSuggestion: (String) -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
             text = stringResource(Res.string.chat_intro),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp),
+            modifier = Modifier.padding(bottom = 8.dp)
         )
         listOf(Res.string.chat_suggestion_spending, Res.string.chat_suggestion_yogurt, Res.string.chat_suggestion_top).forEach {
             val text = stringResource(it)
@@ -180,7 +183,7 @@ private fun Messages(uiState: ChatUiState, onOpenSettings: () -> Unit) {
         state = listState,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize()
     ) {
         items(uiState.messages, key = { it.id }) { message ->
             when (message) {
@@ -200,7 +203,7 @@ private fun QuestionBubble(text: String) {
             color = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             shape = RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp),
-            modifier = Modifier.widthIn(max = 320.dp),
+            modifier = Modifier.widthIn(max = 320.dp)
         ) {
             Text(text, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp))
         }
@@ -212,7 +215,7 @@ private fun AnswerBubble(answer: ChatMessage.Answer) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 4.dp),
-        modifier = Modifier.widthIn(max = 340.dp),
+        modifier = Modifier.widthIn(max = 340.dp)
     ) {
         Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             SelectionContainer { Text(answer.text, style = MaterialTheme.typography.bodyLarge) }
@@ -220,7 +223,7 @@ private fun AnswerBubble(answer: ChatMessage.Answer) {
                 Text(
                     text = pluralStringResource(Res.plurals.chat_based_on, answer.receiptCount, answer.receiptCount),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -233,7 +236,7 @@ private fun FailureBubble(reason: AskFailure, onOpenSettings: () -> Unit) {
         color = MaterialTheme.colorScheme.errorContainer,
         contentColor = MaterialTheme.colorScheme.onErrorContainer,
         shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 4.dp),
-        modifier = Modifier.widthIn(max = 340.dp),
+        modifier = Modifier.widthIn(max = 340.dp)
     ) {
         Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
             Text(stringResource(reason.message()), style = MaterialTheme.typography.bodyMedium)
@@ -249,13 +252,13 @@ private fun Thinking(step: ThinkingStep) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
         Text(
             text = stringResource(step.label()),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -265,7 +268,7 @@ private fun InputRow(uiState: ChatUiState, onInputChange: (String) -> Unit, onSe
     Row(
         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         OutlinedTextField(
             value = uiState.input,
@@ -275,10 +278,14 @@ private fun InputRow(uiState: ChatUiState, onInputChange: (String) -> Unit, onSe
             shape = RoundedCornerShape(24.dp),
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Send),
             keyboardActions = KeyboardActions(onSend = { if (uiState.canSend) onSend() }),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f)
         )
         FilledIconButton(onClick = onSend, enabled = uiState.canSend, modifier = Modifier.size(48.dp)) {
-            Icon(painterResource(Res.drawable.ic_send), contentDescription = stringResource(Res.string.chat_send), modifier = Modifier.size(20.dp))
+            Icon(
+                painterResource(Res.drawable.ic_send),
+                contentDescription = stringResource(Res.string.chat_send),
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }
@@ -291,7 +298,7 @@ private fun NoKey(onOpenSettings: () -> Unit, modifier: Modifier = Modifier) {
             Text(
                 text = stringResource(Res.string.chat_no_key_text),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Button(onClick = onOpenSettings) { Text(stringResource(Res.string.chat_no_key_button)) }
         }
@@ -321,7 +328,7 @@ private val previewMessages = listOf(
     ChatMessage.Question(0, "How many yogurts did I buy in September?"),
     ChatMessage.Answer(1, "You bought 24 yogurts in September: 5 packs of Iogurte grego natural 4x125 g and 4 single ones.", 6),
     ChatMessage.Question(2, "And in August?"),
-    ChatMessage.Failure(3, AskFailure.QUOTA),
+    ChatMessage.Failure(3, AskFailure.QUOTA)
 )
 
 @Preview
@@ -330,7 +337,11 @@ private fun ChatConversationPreview() {
     CestoTheme {
         ChatScreen(
             uiState = ChatUiState(isReady = true, messages = previewMessages, thinking = ThinkingStep.COUNTING),
-            onInputChange = {}, onSend = {}, onSuggestion = {}, onNewChat = {}, onOpenSettings = {},
+            onInputChange = {},
+            onSend = {},
+            onSuggestion = {},
+            onNewChat = {},
+            onOpenSettings = {}
         )
     }
 }
@@ -339,7 +350,8 @@ private fun ChatConversationPreview() {
 @Composable
 private fun ChatEmptyDarkPreview() {
     CestoTheme(darkTheme = true) {
-        ChatScreen(uiState = ChatUiState(isReady = true), onInputChange = {}, onSend = {}, onSuggestion = {}, onNewChat = {}, onOpenSettings = {})
+        ChatScreen(uiState = ChatUiState(isReady = true), onInputChange = {
+        }, onSend = {}, onSuggestion = {}, onNewChat = {}, onOpenSettings = {})
     }
 }
 
@@ -347,6 +359,7 @@ private fun ChatEmptyDarkPreview() {
 @Composable
 private fun ChatNoKeyPreview() {
     CestoTheme {
-        ChatScreen(uiState = ChatUiState(isReady = false), onInputChange = {}, onSend = {}, onSuggestion = {}, onNewChat = {}, onOpenSettings = {})
+        ChatScreen(uiState = ChatUiState(isReady = false), onInputChange = {
+        }, onSend = {}, onSuggestion = {}, onNewChat = {}, onOpenSettings = {})
     }
 }

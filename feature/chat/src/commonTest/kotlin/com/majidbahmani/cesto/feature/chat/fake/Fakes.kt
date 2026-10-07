@@ -46,8 +46,12 @@ class FakeReceiptTools(private val receiptIds: Map<String, List<Long>> = emptyMa
 
 class FakeGeminiKeyStore(initial: String? = "AIza-test") : GeminiKeyStore {
     override val key = MutableStateFlow(initial)
-    override suspend fun save(key: String) { this.key.value = key }
-    override suspend fun clear() { key.value = null }
+    override suspend fun save(key: String) {
+        this.key.value = key
+    }
+    override suspend fun clear() {
+        key.value = null
+    }
 }
 
 /** Search words → the vectors given in [queries]; records what was asked. */

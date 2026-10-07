@@ -15,17 +15,15 @@ import platform.Foundation.NSURLIsExcludedFromBackupKey
 import platform.Foundation.NSUserDomainMask
 import platform.Foundation.create
 import platform.Foundation.dataWithContentsOfURL
-import platform.posix.memcpy
 import platform.Foundation.writeToURL
+import platform.posix.memcpy
 
 /**
  * `Application Support/receipts`, excluded from iCloud backup. Only the relative path is stored:
  * the app container's absolute path changes between installs and updates.
  */
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
-class IosReceiptFileStore(
-    private val ioDispatcher: CoroutineDispatcher,
-) : ReceiptFileStore {
+class IosReceiptFileStore(private val ioDispatcher: CoroutineDispatcher) : ReceiptFileStore {
 
     override suspend fun save(fileName: String, bytes: ByteArray): String = withContext(ioDispatcher) {
         require(bytes.isNotEmpty()) { "empty file" }
@@ -48,7 +46,7 @@ class IosReceiptFileStore(
     private fun receiptsDirectory(): NSURL {
         val fileManager = NSFileManager.defaultManager
         val base = requireNotNull(
-            fileManager.URLForDirectory(NSApplicationSupportDirectory, NSUserDomainMask, null, true, null),
+            fileManager.URLForDirectory(NSApplicationSupportDirectory, NSUserDomainMask, null, true, null)
         )
         val directory = requireNotNull(base.URLByAppendingPathComponent(DIRECTORY))
         fileManager.createDirectoryAtURL(directory, withIntermediateDirectories = true, attributes = null, error = null)

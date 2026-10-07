@@ -43,11 +43,7 @@ class AndroidGmailAuthorizer(context: Context) : GmailAuthorizer {
         if (this.launcher === launcher) this.launcher = null
     }
 
-    override fun authorize(
-        interactive: Boolean,
-        onSuccess: (accessToken: String) -> Unit,
-        onFailure: (GmailAuthError) -> Unit,
-    ) {
+    override fun authorize(interactive: Boolean, onSuccess: (accessToken: String) -> Unit, onFailure: (GmailAuthError) -> Unit) {
         client.authorize(request)
             .addOnSuccessListener { result ->
                 when {

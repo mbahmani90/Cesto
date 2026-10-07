@@ -68,10 +68,10 @@ class FakeGmailApi(private val pageSize: Int = 2, private val requestMillis: Lon
                         partId = partId,
                         mimeType = "application/pdf",
                         filename = "Fatura_$id-$partId.pdf",
-                        body = MessagePartBodyDto(attachmentId = "att-$id-$partId-$attachmentRequests", size = 10),
+                        body = MessagePartBodyDto(attachmentId = "att-$id-$partId-$attachmentRequests", size = 10)
                     )
-                },
-            ),
+                }
+            )
         )
     }
 

@@ -51,7 +51,7 @@ import org.jetbrains.compose.resources.stringResource
 
 /** Composition root: the theme, the bottom bar and the navigation graph; features only know their own routes. */
 @Composable
-fun App() {
+fun App(modifier: Modifier = Modifier) {
     CestoTheme {
         val navController = rememberNavController()
         val currentEntry by navController.currentBackStackEntryAsState()
@@ -62,24 +62,25 @@ fun App() {
         val showBottomBar = !isDemo && TopLevelDestination.entries.any { currentDestination.isInTab(it) }
 
         Scaffold(
+            modifier = modifier,
             bottomBar = {
                 if (showBottomBar) FloatingPillBar(navController, currentDestination)
             },
             // Screens handle the system bars themselves; tabs draw behind the floating pill.
-            contentWindowInsets = WindowInsets(0),
+            contentWindowInsets = WindowInsets(0)
         ) { innerPadding ->
             // How much the pill covers (incl. the system navigation bar); tabs use it for their last item.
             val contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding())
             NavHost(navController = navController, startDestination = OnboardingRoute) {
                 onboardingScreen(
                     // Connected: onboarding is done; Ask becomes the root, so back from it closes the app.
-                    onConnected = {
+                    onConnect = {
                         navController.navigate(TopLevelDestination.START.route) {
                             popUpTo<OnboardingRoute> { inclusive = true }
                         }
                     },
                     // Demo: back returns to onboarding to connect Gmail for real.
-                    onTryDemo = { navController.navigate(ReceiptsRoute(demo = true)) },
+                    onTryDemo = { navController.navigate(ReceiptsRoute(demo = true)) }
                 )
                 chatScreen(onOpenSettings = { navController.navigateToTab(TopLevelDestination.SETTINGS) }, contentPadding = contentPadding)
                 receiptsScreen(contentPadding)
@@ -97,24 +98,24 @@ private fun FloatingPillBar(navController: NavHostController, currentDestination
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.navigationBars) // above the gesture bar / 3 buttons
             .padding(bottom = 16.dp),
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.Center
     ) {
         Surface(
             shape = CircleShape,
             // Alpha on the color, not Modifier.alpha: icons and labels stay fully opaque.
             color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.7f),
-            shadowElevation = 8.dp,
+            shadowElevation = 8.dp
         ) {
             Row(
                 modifier = Modifier.selectableGroup().padding(horizontal = 8.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 TopLevelDestination.entries.forEach { destination ->
                     BottomBarItem(
                         destination = destination,
                         // Derived from the back stack, not remembered: stays right after back, deep links, process death.
                         selected = currentDestination.isInTab(destination),
-                        onClick = { navController.navigateToTab(destination) },
+                        onClick = { navController.navigateToTab(destination) }
                     )
                 }
             }
@@ -132,25 +133,25 @@ private fun BottomBarItem(destination: TopLevelDestination, selected: Boolean, o
             .clip(CircleShape) // ripple follows the pill
             .selectable(selected = selected, onClick = onClick, role = Role.Tab)
             .padding(vertical = 2.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
             modifier = Modifier
                 .size(width = 48.dp, height = 26.dp)
                 .background(if (selected) colors.secondaryContainer else Color.Transparent, CircleShape),
-            contentAlignment = Alignment.Center,
+            contentAlignment = Alignment.Center
         ) {
             Icon(
                 painter = painterResource(destination.icon),
                 contentDescription = null, // the label names the tab; no double reading
                 modifier = Modifier.size(18.dp),
-                tint = if (selected) colors.onSecondaryContainer else colors.onSurfaceVariant,
+                tint = if (selected) colors.onSecondaryContainer else colors.onSurfaceVariant
             )
         }
         Text(
             text = stringResource(destination.label),
             style = MaterialTheme.typography.labelSmall,
-            color = if (selected) colors.onSurface else colors.onSurfaceVariant,
+            color = if (selected) colors.onSurface else colors.onSurfaceVariant
         )
     }
 }

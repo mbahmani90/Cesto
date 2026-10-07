@@ -9,16 +9,18 @@ import com.majidbahmani.cesto.feature.chat.domain.model.ToolCall
 import com.majidbahmani.cesto.feature.chat.domain.model.ToolResult
 import com.majidbahmani.cesto.llm.embedding.EmbeddingProvider
 import com.majidbahmani.cesto.llm.embedding.EmbeddingUnavailableException
+import kotlin.math.roundToLong
+import kotlin.time.Instant
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.format
 import kotlinx.datetime.format.char
-import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.JsonArray
@@ -30,8 +32,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
-import kotlin.math.roundToLong
-import kotlin.time.Instant
 
 /**
  * Runs the model's tool calls as fixed, read-only SQL queries on the phone. The arguments are checked here
@@ -42,7 +42,7 @@ class SqlReceiptTools(
     private val database: CestoDatabase,
     private val ioDispatcher: CoroutineDispatcher,
     private val embeddings: EmbeddingProvider,
-    private val timeZone: TimeZone = LISBON,
+    private val timeZone: TimeZone = LISBON
 ) : ReceiptTools {
 
     private val queries get() = database.insightsQueries
@@ -93,7 +93,7 @@ class SqlReceiptTools(
                     }
                 }
                 if (products.isEmpty()) put("note", "No product matches. Try other Portuguese keywords.")
-            },
+            }
         )
     }
 
@@ -133,8 +133,13 @@ class SqlReceiptTools(
                         }
                     }
                 }
-                put("note", if (matches.isEmpty()) "Nothing close. Try other words or findProducts." else "Closest first; keep only the ones that match.")
-            },
+                val note = if (matches.isEmpty()) {
+                    "Nothing close. Try other words or findProducts."
+                } else {
+                    "Closest first; keep only the ones that match."
+                }
+                put("note", note)
+            }
         )
     }
 
@@ -169,7 +174,7 @@ class SqlReceiptTools(
                 }
                 putUnreadReceipts(from, to)
             },
-            receiptIds = queries.receiptIdsWithProducts(ids, from, to).executeAsList(),
+            receiptIds = queries.receiptIdsWithProducts(ids, from, to).executeAsList()
         )
     }
 
@@ -184,7 +189,7 @@ class SqlReceiptTools(
                     put("scope", "everything paid")
                     put("euros", (total.cents ?: 0).euros())
                     put("receipts", total.receipts)
-                },
+                }
             )
         }
         val rows = queries.spendingByProduct(ids, from, to).executeAsList()
@@ -204,7 +209,7 @@ class SqlReceiptTools(
                 putTotals { put("euros", rows.sumOf { it.cents }.euros()) }
                 putUnreadReceipts(from, to)
             },
-            receiptIds = queries.receiptIdsWithProducts(ids, from, to).executeAsList(),
+            receiptIds = queries.receiptIdsWithProducts(ids, from, to).executeAsList()
         )
     }
 
@@ -236,7 +241,7 @@ class SqlReceiptTools(
                 }
                 put("amountMeans", "single units, or kg for weighed products")
                 putUnreadReceipts(from, to)
-            },
+            }
         )
     }
 
@@ -258,7 +263,7 @@ class SqlReceiptTools(
                 }
                 if (receipts.size == MAX_ROWS) put("note", "Only the newest $MAX_ROWS are listed.")
             },
-            receiptIds = receipts.map { it.id },
+            receiptIds = receipts.map { it.id }
         )
     }
 
@@ -296,8 +301,7 @@ class SqlReceiptTools(
 
     private class BadArgumentException(message: String) : Exception(message)
 
-    private fun errorResult(call: ToolCall, message: String) =
-        ToolResult(call, buildJsonObject { put("error", message) })
+    private fun errorResult(call: ToolCall, message: String) = ToolResult(call, buildJsonObject { put("error", message) })
 
     private companion object {
         const val TAG = "SqlReceiptTools"
@@ -315,7 +319,15 @@ class SqlReceiptTools(
         const val READY = "READY"
 
         val DATE_TIME = LocalDateTime.Format {
-            year(); char('-'); monthNumber(); char('-'); day(); char(' '); hour(); char(':'); minute()
+            year()
+            char('-')
+            monthNumber()
+            char('-')
+            day()
+            char(' ')
+            hour()
+            char(':')
+            minute()
         }
     }
 }
@@ -327,8 +339,7 @@ private fun Long.euros(): Double = this / 100.0
 private fun Double.rounded(): Double = (this * 1000).roundToLong() / 1000.0
 
 // The model's arguments: numbers may arrive as 3, 3.0 or "3".
-private fun JsonObject.string(name: String): String? =
-    (this[name] as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() }
+private fun JsonObject.string(name: String): String? = (this[name] as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() }
 
 private fun JsonObject.long(name: String): Long? = (this[name] as? JsonPrimitive)?.toLongOrNull()
 

@@ -17,6 +17,11 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.utils.io.errors.IOException
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
@@ -27,11 +32,6 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
 
 class GeminiAgentModelTest {
 
@@ -41,7 +41,7 @@ class GeminiAgentModelTest {
     private val prompt = ReceiptAgentPrompt(
         database = CestoDatabase(createTestDriver()),
         ioDispatcher = Dispatchers.Unconfined,
-        currentTimeMillis = { 1_791_288_000_000 }, // 2026-10-06 12:00 UTC
+        currentTimeMillis = { 1_791_288_000_000 } // 2026-10-06 12:00 UTC
     )
 
     /** Each request gets the next answer: a (status, body) pair. */
@@ -57,7 +57,9 @@ class GeminiAgentModelTest {
 
     private fun ok(content: String) = HttpStatusCode.OK to """{"candidates":[{"content":$content,"finishReason":"STOP"}]}"""
 
-    private val callContent = """{"role":"model","parts":[{"functionCall":{"name":"findProducts","args":{"keywords":["iogurt"]}},"thoughtSignature":"c2lnbmF0dXJl"}]}"""
+    private val callContent =
+        """{"role":"model","parts":[{"functionCall":{"name":"findProducts","args":{"keywords":["iogurt"]}},""" +
+            """"thoughtSignature":"c2lnbmF0dXJl"}]}"""
 
     @Test
     fun functionCall_becomesToolCalls_andTheModelTurnGoesBackUnchanged() = runTest {
@@ -139,7 +141,7 @@ class GeminiAgentModelTest {
     fun systemInstruction_describesTheData() {
         val text = systemInstruction(
             today = LocalDate(2026, 10, 6),
-            coverage = DataCoverage(LocalDate(2026, 1, 3), LocalDate(2026, 10, 5), receipts = 59, receiptsWithItems = 40),
+            coverage = DataCoverage(LocalDate(2026, 1, 3), LocalDate(2026, 10, 5), receipts = 59, receiptsWithItems = 40)
         )
 
         assertTrue(text.contains("from 2026-01-03 to 2026-10-05: 59 receipts, items read on 40"))

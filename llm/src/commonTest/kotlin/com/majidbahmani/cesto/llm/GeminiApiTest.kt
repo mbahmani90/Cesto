@@ -8,11 +8,11 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.utils.io.errors.IOException
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -25,13 +25,14 @@ class GeminiApiTest {
             MockEngine { request ->
                 requests += request
                 respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
-            },
-        ),
+            }
+        )
     )
 
     /** Shape of Gemini's real answer for an invalid key (checked with curl and an invented key). */
     private val invalidKeyBody = """{"error":{"code":400,"message":"API key not valid. Please pass a valid API key.",
-        |"status":"INVALID_ARGUMENT","details":[{"reason":"API_KEY_INVALID"}]}}""".trimMargin()
+        |"status":"INVALID_ARGUMENT","details":[{"reason":"API_KEY_INVALID"}]}}
+    """.trimMargin()
 
     @Test
     fun validKey_keyInHeaderNotInUrl() = runTest {
@@ -68,7 +69,7 @@ class GeminiApiTest {
         assertEquals("{\"lines\":[]}", json)
         assertEquals(
             "https://generativelanguage.googleapis.com/v1beta/models/${GeminiApi.EXTRACTION_MODEL}:generateContent",
-            requests.single().url.toString(),
+            requests.single().url.toString()
         )
     }
 

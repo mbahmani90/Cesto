@@ -7,10 +7,7 @@ import com.majidbahmani.cesto.llm.GeminiKeyStore
 import com.majidbahmani.cesto.llm.KeyCheck
 import kotlinx.coroutines.flow.Flow
 
-class GeminiKeyRepositoryImpl(
-    private val store: GeminiKeyStore,
-    private val gemini: GeminiApi,
-) : GeminiKeyRepository {
+class GeminiKeyRepositoryImpl(private val store: GeminiKeyStore, private val gemini: GeminiApi) : GeminiKeyRepository {
 
     override fun observeKey(): Flow<String?> = store.key
 

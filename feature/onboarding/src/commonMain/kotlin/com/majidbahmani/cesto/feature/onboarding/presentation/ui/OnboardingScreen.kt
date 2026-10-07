@@ -57,22 +57,18 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-internal fun OnboardingRoute(
-    onConnected: () -> Unit,
-    onTryDemo: () -> Unit,
-    viewModel: OnboardingViewModel = koinViewModel(),
-) {
+internal fun OnboardingRoute(onConnect: () -> Unit, onTryDemo: () -> Unit, viewModel: OnboardingViewModel = koinViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val currentOnConnected by rememberUpdatedState(onConnected)
+    val currentOnConnect by rememberUpdatedState(onConnect)
 
     LaunchedEffect(uiState.status) {
-        if (uiState.status == Status.CONNECTED) currentOnConnected()
+        if (uiState.status == Status.CONNECTED) currentOnConnect()
     }
 
     OnboardingScreen(
         uiState = uiState,
         onConnectGmail = viewModel::onConnectGmail,
-        onTryDemo = onTryDemo,
+        onTryDemo = onTryDemo
     )
 }
 
@@ -81,7 +77,7 @@ internal fun OnboardingScreen(
     uiState: OnboardingUiState,
     onConnectGmail: () -> Unit,
     onTryDemo: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
         when (uiState.status) {
@@ -89,64 +85,60 @@ internal fun OnboardingScreen(
             Status.CHECKING, Status.CONNECTED -> Box(contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
+
             Status.READY, Status.CONNECTING -> IntroContent(
                 isConnecting = uiState.status == Status.CONNECTING,
                 error = uiState.error,
                 onConnectGmail = onConnectGmail,
-                onTryDemo = onTryDemo,
+                onTryDemo = onTryDemo
             )
         }
     }
 }
 
 @Composable
-private fun IntroContent(
-    isConnecting: Boolean,
-    error: ErrorReason?,
-    onConnectGmail: () -> Unit,
-    onTryDemo: () -> Unit,
-) {
+private fun IntroContent(isConnecting: Boolean, error: ErrorReason?, onConnectGmail: () -> Unit, onTryDemo: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .verticalScroll(rememberScrollState()),
-        contentAlignment = Alignment.TopCenter,
+        contentAlignment = Alignment.TopCenter
     ) {
         Column(
             modifier = Modifier.widthIn(max = 480.dp).padding(horizontal = 24.dp, vertical = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
                 text = stringResource(Res.string.onboarding_title),
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.primary
             )
             Text(text = stringResource(Res.string.onboarding_tagline), style = MaterialTheme.typography.headlineSmall)
             Text(
                 text = stringResource(Res.string.onboarding_description),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             PrivacyCard(
                 title = stringResource(Res.string.onboarding_reads_title),
                 items = listOf(
                     stringResource(Res.string.onboarding_reads_receipts),
-                    stringResource(Res.string.onboarding_reads_local),
+                    stringResource(Res.string.onboarding_reads_local)
                 ),
                 mark = "✓",
-                markColor = MaterialTheme.colorScheme.primary,
+                markColor = MaterialTheme.colorScheme.primary
             )
             PrivacyCard(
                 title = stringResource(Res.string.onboarding_never_title),
                 items = listOf(
                     stringResource(Res.string.onboarding_never_change),
-                    stringResource(Res.string.onboarding_never_upload),
+                    stringResource(Res.string.onboarding_never_upload)
                 ),
                 mark = "✕",
-                markColor = MaterialTheme.colorScheme.error,
+                markColor = MaterialTheme.colorScheme.error
             )
 
             Spacer(Modifier.height(8.dp))
@@ -156,7 +148,7 @@ private fun IntroContent(
             Button(
                 onClick = onConnectGmail,
                 enabled = !isConnecting,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp)
             ) {
                 if (isConnecting) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
@@ -168,12 +160,12 @@ private fun IntroContent(
                 text = stringResource(Res.string.onboarding_connect_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
+                modifier = Modifier.align(Alignment.CenterHorizontally)
             )
             OutlinedButton(
                 onClick = onTryDemo,
                 enabled = !isConnecting,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp)
             ) {
                 Text(stringResource(Res.string.onboarding_try_demo))
             }
@@ -186,7 +178,7 @@ private fun PrivacyCard(title: String, items: List<String>, mark: String, markCo
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = MaterialTheme.shapes.large,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(text = title, style = MaterialTheme.typography.titleMedium)
@@ -210,7 +202,7 @@ private fun ErrorMessage(error: ErrorReason) {
         color = MaterialTheme.colorScheme.errorContainer,
         contentColor = MaterialTheme.colorScheme.onErrorContainer,
         shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Text(text = text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(12.dp))
     }
@@ -231,7 +223,7 @@ private fun OnboardingScreenErrorDarkPreview() {
         OnboardingScreen(
             uiState = OnboardingUiState(status = Status.READY, error = ErrorReason.PERMISSION_DENIED),
             onConnectGmail = {},
-            onTryDemo = {},
+            onTryDemo = {}
         )
     }
 }

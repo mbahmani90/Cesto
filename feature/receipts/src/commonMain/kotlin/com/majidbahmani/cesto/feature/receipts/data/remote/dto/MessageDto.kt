@@ -10,5 +10,5 @@ data class MessageDto(
     /** Epoch millis as a string (Google sends int64 values as JSON strings). */
     val internalDate: String? = null,
     val snippet: String? = null,
-    val payload: MessagePartDto? = null,
+    val payload: MessagePartDto? = null
 )

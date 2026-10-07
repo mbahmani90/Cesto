@@ -3,8 +3,9 @@ package com.majidbahmani.cesto.feature.receipts.data.extraction
 import com.majidbahmani.cesto.llm.GeminiApi
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ServerResponseException
-import kotlinx.coroutines.delay
 import io.ktor.http.HttpStatusCode
+import kotlin.math.roundToLong
+import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -13,7 +14,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
-import kotlin.math.roundToLong
 
 /**
  * Gemini's structured output: the prompt explains Continente's line layout, the schema makes the answer
@@ -45,18 +45,18 @@ class GeminiReceiptItemExtractor(private val gemini: GeminiApi) : ReceiptItemExt
         throw ExtractionUnavailableException("Gemini overloaded (5xx on ${GeminiApi.EXTRACTION_MODEL} and ${GeminiApi.FALLBACK_MODEL})")
     }
 
-    private suspend fun generate(key: String, itemSection: String, model: String): String =
-        try {
-            gemini.generateJson(key = key, systemInstruction = INSTRUCTION, prompt = itemSection, responseSchema = SCHEMA, model = model)
-        } catch (e: ClientRequestException) {
-            when (e.response.status) {
-                // No point trying the other receipts now: wrong key, API not allowed, or quota used up.
-                HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden,
-                HttpStatusCode.TooManyRequests,
-                -> throw ExtractionUnavailableException("Gemini answered ${e.response.status.value}", e)
-                else -> throw e
-            }
+    private suspend fun generate(key: String, itemSection: String, model: String): String = try {
+        gemini.generateJson(key = key, systemInstruction = INSTRUCTION, prompt = itemSection, responseSchema = SCHEMA, model = model)
+    } catch (e: ClientRequestException) {
+        when (e.response.status) {
+            // No point trying the other receipts now: wrong key, API not allowed, or quota used up.
+            HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden,
+            HttpStatusCode.TooManyRequests
+            -> throw ExtractionUnavailableException("Gemini answered ${e.response.status.value}", e)
+
+            else -> throw e
         }
+    }
 
     @Serializable
     private data class ExtractedItemsDto(val lines: List<LineDto> = emptyList())
@@ -71,7 +71,7 @@ class GeminiReceiptItemExtractor(private val gemini: GeminiApi) : ReceiptItemExt
         val unit: String = "UNIT",
         val unitsPerPack: Int = 1,
         val unitPrice: Double? = null,
-        val lineTotal: Double,
+        val lineTotal: Double
     ) {
         fun toLine() = ExtractedLine(
             kind = ExtractedLine.Kind.entries.firstOrNull { it.name == kind } ?: ExtractedLine.Kind.ITEM,
@@ -82,7 +82,7 @@ class GeminiReceiptItemExtractor(private val gemini: GeminiApi) : ReceiptItemExt
             unit = if (unit == "KG") ExtractedLine.Unit.KG else ExtractedLine.Unit.UNIT,
             unitsPerPack = unitsPerPack.coerceAtLeast(1),
             unitPriceCents = unitPrice?.toCents(),
-            lineTotalCents = lineTotal.toCents(),
+            lineTotalCents = lineTotal.toCents()
         )
     }
 
@@ -121,18 +121,31 @@ class GeminiReceiptItemExtractor(private val gemini: GeminiApi) : ReceiptItemExt
                         putJsonObject("properties") {
                             putJsonObject("kind") {
                                 put("type", "STRING")
-                                putJsonArray("enum") { add("ITEM"); add("DEPOSIT"); add("DISCOUNT") }
+                                putJsonArray("enum") {
+                                    add("ITEM")
+                                    add("DEPOSIT")
+                                    add("DISCOUNT")
+                                }
                             }
                             putJsonObject("rawName") { put("type", "STRING") }
                             putJsonObject("normalizedName") { put("type", "STRING") }
-                            putJsonObject("category") { put("type", "STRING"); put("nullable", true) }
+                            putJsonObject("category") {
+                                put("type", "STRING")
+                                put("nullable", true)
+                            }
                             putJsonObject("quantity") { put("type", "NUMBER") }
                             putJsonObject("unit") {
                                 put("type", "STRING")
-                                putJsonArray("enum") { add("UNIT"); add("KG") }
+                                putJsonArray("enum") {
+                                    add("UNIT")
+                                    add("KG")
+                                }
                             }
                             putJsonObject("unitsPerPack") { put("type", "INTEGER") }
-                            putJsonObject("unitPrice") { put("type", "NUMBER"); put("nullable", true) }
+                            putJsonObject("unitPrice") {
+                                put("type", "NUMBER")
+                                put("nullable", true)
+                            }
                             putJsonObject("lineTotal") { put("type", "NUMBER") }
                         }
                         putJsonArray("required") {

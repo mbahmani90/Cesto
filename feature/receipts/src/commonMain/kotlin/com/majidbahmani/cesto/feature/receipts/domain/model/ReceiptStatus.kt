@@ -12,5 +12,5 @@ enum class ReceiptStatus {
     READY,
 
     /** The PDF couldn't be downloaded or read; retrying won't help. */
-    FAILED,
+    FAILED
 }

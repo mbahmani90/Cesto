@@ -14,6 +14,6 @@ fun CestoScreenTitle(text: String, modifier: Modifier = Modifier) {
         style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary,
-        modifier = modifier,
+        modifier = modifier
     )
 }

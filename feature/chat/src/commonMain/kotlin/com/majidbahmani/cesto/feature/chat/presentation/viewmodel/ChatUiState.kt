@@ -9,7 +9,7 @@ data class ChatUiState(
     val messages: List<ChatMessage> = emptyList(),
     val input: String = "",
     /** Non-null while a question is being answered. */
-    val thinking: ThinkingStep? = null,
+    val thinking: ThinkingStep? = null
 ) {
     val canSend: Boolean get() = isReady == true && thinking == null && input.isNotBlank()
 }

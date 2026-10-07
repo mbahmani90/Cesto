@@ -6,6 +6,10 @@ import com.majidbahmani.cesto.feature.onboarding.domain.usecase.CheckGmailConnec
 import com.majidbahmani.cesto.feature.onboarding.domain.usecase.ConnectGmailUseCase
 import com.majidbahmani.cesto.feature.onboarding.presentation.viewmodel.OnboardingUiState.ErrorReason
 import com.majidbahmani.cesto.feature.onboarding.presentation.viewmodel.OnboardingUiState.Status
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -15,10 +19,6 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OnboardingViewModelTest {
@@ -48,7 +48,7 @@ class OnboardingViewModelTest {
 
     private fun viewModel() = OnboardingViewModel(
         checkGmailConnection = CheckGmailConnectionUseCase(repository),
-        connectGmail = ConnectGmailUseCase(repository),
+        connectGmail = ConnectGmailUseCase(repository)
     )
 
     /** A view model that finished the start check with "not connected". */

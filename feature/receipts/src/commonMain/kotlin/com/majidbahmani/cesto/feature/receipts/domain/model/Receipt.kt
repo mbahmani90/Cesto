@@ -10,5 +10,5 @@ data class Receipt(
     /** Purchase date and time printed on the receipt; null until its text is read. */
     val purchasedAtMillis: Long? = null,
     /** "TOTAL A PAGAR" in cents; null until its text is read. */
-    val totalCents: Long? = null,
+    val totalCents: Long? = null
 )

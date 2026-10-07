@@ -14,20 +14,12 @@ import kotlinx.coroutines.CancellationException
  * The agent loop: the model picks tools, the app runs them on the phone and sends back only their small
  * results, until the model answers with text. Numbers come from SQL, never from the model's arithmetic.
  */
-class AskQuestionUseCase(
-    private val model: AgentModel,
-    private val tools: ReceiptTools,
-    private val maxRounds: Int = MAX_ROUNDS,
-) {
+class AskQuestionUseCase(private val model: AgentModel, private val tools: ReceiptTools, private val maxRounds: Int = MAX_ROUNDS) {
     /**
      * @param previous the conversation so far (follow-up questions keep their context).
      * @param onToolCall progress for the UI ("Searching your products…").
      */
-    suspend operator fun invoke(
-        previous: List<AgentTurn>,
-        question: String,
-        onToolCall: (ToolCall) -> Unit = {},
-    ): AskResult {
+    suspend operator fun invoke(previous: List<AgentTurn>, question: String, onToolCall: (ToolCall) -> Unit = {}): AskResult {
         val conversation = (previous.lastQuestions(MAX_PREVIOUS_QUESTIONS) + AgentTurn.User(question.trim())).toMutableList()
         val receiptIds = linkedSetOf<Long>()
         return try {
@@ -37,6 +29,7 @@ class AskQuestionUseCase(
                         conversation += reply.turn
                         return AskResult.Answered(reply.text, receiptIds.toList(), conversation)
                     }
+
                     is ModelReply.UseTools -> {
                         conversation += reply.turn
                         val results = reply.calls.map { call ->

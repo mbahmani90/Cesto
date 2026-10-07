@@ -16,5 +16,5 @@ enum class SyncFailure {
     NOT_AUTHORIZED,
 
     /** Network or Gmail error; what was already saved is kept and the next sync continues. */
-    FAILED,
+    FAILED
 }

@@ -8,10 +8,10 @@ import com.majidbahmani.cesto.feature.chat.fake.FakeReceiptTools
 import com.majidbahmani.cesto.feature.chat.fake.ScriptedAgentModel
 import com.majidbahmani.cesto.feature.chat.fake.answer
 import com.majidbahmani.cesto.feature.chat.fake.useTools
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlinx.coroutines.test.runTest
 
 class AskQuestionUseCaseTest {
 

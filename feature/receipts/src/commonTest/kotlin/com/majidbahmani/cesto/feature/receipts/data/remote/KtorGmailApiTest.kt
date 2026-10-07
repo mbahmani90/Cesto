@@ -13,12 +13,12 @@ import io.ktor.client.request.HttpResponseData
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
 
 class KtorGmailApiTest {
 
@@ -33,20 +33,25 @@ class KtorGmailApiTest {
 
     private val requests = mutableListOf<HttpRequestData>()
 
-    private fun api(
-        authorizer: GmailAuthorizer = FakeAuthorizer(),
-        handler: MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
-    ) = KtorGmailApi(
-        client = createHttpClient(MockEngine { request -> requests += request; handler(request) }),
-        tokens = GmailTokenProvider(authorizer, currentTimeMillis = { 0L }),
-    )
+    private fun api(authorizer: GmailAuthorizer = FakeAuthorizer(), handler: MockRequestHandleScope.(HttpRequestData) -> HttpResponseData) =
+        KtorGmailApi(
+            client = createHttpClient(
+                MockEngine { request ->
+                    requests += request
+                    handler(request)
+                }
+            ),
+            tokens = GmailTokenProvider(authorizer, currentTimeMillis = { 0L })
+        )
 
     private fun MockRequestHandleScope.respondJson(body: String, status: HttpStatusCode = HttpStatusCode.OK) =
         respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
 
     @Test
     fun listMessages_sendsQueryPagingAndToken() = runTest {
-        api { respondJson(MESSAGE_LIST_DOCUMENTED_SHAPE) }.listMessages("from:continente has:attachment", pageToken = "page-2", maxResults = 50)
+        api {
+            respondJson(MESSAGE_LIST_DOCUMENTED_SHAPE)
+        }.listMessages("from:continente has:attachment", pageToken = "page-2", maxResults = 50)
 
         val request = requests.single()
         assertEquals("https://gmail.googleapis.com/gmail/v1/users/me/messages", request.url.toString().substringBefore('?'))
@@ -96,7 +101,7 @@ class KtorGmailApiTest {
 
         assertEquals(
             "https://gmail.googleapis.com/gmail/v1/users/me/messages/18c2a0f1/attachments/ANGjdJ_a",
-            requests.single().url.toString(),
+            requests.single().url.toString()
         )
         assertEquals("%PDF-1.7", decodeGmailBase64(body.data!!).decodeToString())
     }

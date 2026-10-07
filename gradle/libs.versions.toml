@@ -22,6 +22,10 @@ navigation = "2.9.2"
 pdfboxAndroid = "2.0.27.0"
 playServicesAuth = "22.0.0"
 sqldelight = "2.4.0"
+spotless = "8.10.3"
+# Compose rules 0.6.7 are built for ktlint 1.8.0: update them together.
+ktlint = "1.8.0"
+composeRules = "0.6.7"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -70,3 +74,4 @@ composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "k
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

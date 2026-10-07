@@ -7,10 +7,10 @@ import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.http.HttpStatusCode
+import kotlin.math.sqrt
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlin.math.sqrt
 
 /**
  * Gemini embeddings with the user's own key. Only the given texts are sent (product name + category, or the
@@ -19,7 +19,7 @@ import kotlin.math.sqrt
 class GeminiEmbeddingProvider(
     private val gemini: GeminiApi,
     private val keys: GeminiKeyStore,
-    private val retryWaitMillis: Long = RETRY_WAIT_MILLIS,
+    private val retryWaitMillis: Long = RETRY_WAIT_MILLIS
 ) : EmbeddingProvider {
 
     override val modelId: String = "${GeminiApi.EMBEDDING_MODEL}@${GeminiApi.EMBEDDING_DIMENSIONS}"
@@ -30,11 +30,9 @@ class GeminiEmbeddingProvider(
         return texts.chunked(MAX_BATCH).flatMap { batch -> request(key, batch.map { "title: none | text: $it" }) }
     }
 
-    override suspend fun embedQuery(text: String): FloatArray =
-        request(key(), listOf("task: search result | query: $text")).single()
+    override suspend fun embedQuery(text: String): FloatArray = request(key(), listOf("task: search result | query: $text")).single()
 
-    private suspend fun key(): String =
-        keys.key.first()?.takeIf { it.isNotBlank() } ?: throw EmbeddingUnavailableException(Reason.NO_KEY)
+    private suspend fun key(): String = keys.key.first()?.takeIf { it.isNotBlank() } ?: throw EmbeddingUnavailableException(Reason.NO_KEY)
 
     /** One retry after an overload (5xx); other errors become a [Reason]. */
     private suspend fun request(key: String, texts: List<String>): List<FloatArray> {

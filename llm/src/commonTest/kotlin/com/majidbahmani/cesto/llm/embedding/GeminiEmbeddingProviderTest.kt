@@ -12,27 +12,31 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.utils.io.errors.IOException
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.int
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class GeminiEmbeddingProviderTest {
 
     private val requests = mutableListOf<HttpRequestData>()
     private val keys = object : GeminiKeyStore {
         override val key = MutableStateFlow<String?>("AIza-test")
-        override suspend fun save(key: String) { this.key.value = key }
-        override suspend fun clear() { key.value = null }
+        override suspend fun save(key: String) {
+            this.key.value = key
+        }
+        override suspend fun clear() {
+            key.value = null
+        }
     }
 
     /** Answers each request with one [3, 4] vector per text, unless [statuses] says otherwise. */

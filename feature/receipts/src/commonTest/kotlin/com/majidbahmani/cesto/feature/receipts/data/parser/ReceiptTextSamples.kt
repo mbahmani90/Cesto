@@ -1,9 +1,7 @@
 package com.majidbahmani.cesto.feature.receipts.data.parser
 
-/**
- * Invented receipts in the layout of a real Cartão Continente "Fatura Simplificada": no real NIF,
- * card number, receipt number or ATCUD. Two orders of the same receipt, as the extractors produce them.
- */
+// Invented receipts in the layout of a real Cartão Continente "Fatura Simplificada": no real NIF,
+// card number, receipt number or ATCUD. Two orders of the same receipt, as the extractors produce them.
 
 /** PdfBox-Android: lines in reading order, each price next to its item. */
 internal const val PDFBOX_RECEIPT = """MDL Exemplo

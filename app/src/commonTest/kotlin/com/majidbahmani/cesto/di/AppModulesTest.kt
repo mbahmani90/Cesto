@@ -1,32 +1,32 @@
 package com.majidbahmani.cesto.di
 
+import app.cash.sqldelight.db.SqlDriver
 import com.majidbahmani.cesto.feature.chat.presentation.viewmodel.ChatViewModel
 import com.majidbahmani.cesto.feature.onboarding.presentation.viewmodel.OnboardingViewModel
-import com.majidbahmani.cesto.feature.receipts.data.remote.GmailApi
 import com.majidbahmani.cesto.feature.receipts.data.local.PdfTextExtractor
 import com.majidbahmani.cesto.feature.receipts.data.local.ReceiptFileStore
+import com.majidbahmani.cesto.feature.receipts.data.remote.GmailApi
 import com.majidbahmani.cesto.feature.receipts.data.remote.KtorGmailApi
 import com.majidbahmani.cesto.feature.receipts.presentation.viewmodel.ReceiptsViewModel
 import com.majidbahmani.cesto.feature.settings.presentation.viewmodel.SettingsViewModel
 import com.majidbahmani.cesto.gmailauth.GmailAuthError
 import com.majidbahmani.cesto.gmailauth.GmailAuthorizer
 import com.majidbahmani.cesto.llm.GeminiKeyStore
-import kotlinx.coroutines.flow.flowOf
-import app.cash.sqldelight.db.SqlDriver
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.setMain
-import org.koin.dsl.koinApplication
-import org.koin.dsl.module
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 import kotlin.test.assertSame
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.koin.dsl.koinApplication
+import org.koin.dsl.module
 
 /** Koin resolves at runtime: a missing binding only shows up here, not at compile time. */
 @OptIn(ExperimentalCoroutinesApi::class)

@@ -3,11 +3,11 @@ package com.majidbahmani.cesto.feature.onboarding.data.repository
 import com.majidbahmani.cesto.feature.onboarding.domain.model.GmailConnectionResult
 import com.majidbahmani.cesto.gmailauth.GmailAuthError
 import com.majidbahmani.cesto.gmailauth.GmailAuthorizer
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
 
 class GmailConnectionRepositoryImplTest {
 
@@ -47,7 +47,7 @@ class GmailConnectionRepositoryImplTest {
         val expected = mapOf(
             GmailAuthError.CANCELLED to GmailConnectionResult.CANCELLED,
             GmailAuthError.NOT_GRANTED to GmailConnectionResult.PERMISSION_DENIED,
-            GmailAuthError.FAILED to GmailConnectionResult.FAILED,
+            GmailAuthError.FAILED to GmailConnectionResult.FAILED
         )
         expected.forEach { (error, result) ->
             assertEquals(result, GmailConnectionRepositoryImpl(FakeAuthorizer(error)).connect(), "for $error")

@@ -9,7 +9,7 @@ data class ReceiptsUiState(
     /** Gmail sync running: pull-to-refresh indicator. The list stays visible meanwhile. */
     val isSyncing: Boolean = false,
     /** Result of the last sync if something wasn't done; null when everything worked. */
-    val syncProblem: SyncProblem? = null,
+    val syncProblem: SyncProblem? = null
 ) {
     sealed interface SyncProblem {
         /** Access revoked: connect Gmail again. */

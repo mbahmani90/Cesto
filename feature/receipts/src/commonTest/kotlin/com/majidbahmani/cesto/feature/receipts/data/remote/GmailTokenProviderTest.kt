@@ -2,14 +2,14 @@ package com.majidbahmani.cesto.feature.receipts.data.remote
 
 import com.majidbahmani.cesto.gmailauth.GmailAuthError
 import com.majidbahmani.cesto.gmailauth.GmailAuthorizer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 
 class GmailTokenProviderTest {
 

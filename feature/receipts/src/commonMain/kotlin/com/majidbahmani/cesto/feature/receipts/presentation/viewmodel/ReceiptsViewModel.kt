@@ -20,7 +20,7 @@ import kotlinx.datetime.TimeZone
 class ReceiptsViewModel(
     observeReceipts: ObserveReceiptsUseCase,
     private val syncReceipts: SyncReceiptsUseCase,
-    private val timeZone: TimeZone = TimeZone.currentSystemDefault(),
+    private val timeZone: TimeZone = TimeZone.currentSystemDefault()
 ) : ViewModel() {
 
     private data class SyncState(val isSyncing: Boolean = false, val problem: SyncProblem? = null)
@@ -33,7 +33,7 @@ class ReceiptsViewModel(
             isLoading = false,
             receipts = receipts.map { it.toUi(timeZone) },
             isSyncing = sync.isSyncing,
-            syncProblem = sync.problem,
+            syncProblem = sync.problem
         )
     }.stateIn(viewModelScope, SharingStarted.Lazily, ReceiptsUiState())
 
@@ -50,6 +50,7 @@ class ReceiptsViewModel(
         viewModelScope.launch {
             val problem = when (val result = syncReceipts()) {
                 is SyncResult.Success -> result.incomplete.takeIf { it > 0 }?.let { SyncProblem.Incomplete(it) }
+
                 is SyncResult.Failure -> when (result.reason) {
                     SyncFailure.NOT_AUTHORIZED -> SyncProblem.NotAuthorized
                     SyncFailure.FAILED -> SyncProblem.Failed
