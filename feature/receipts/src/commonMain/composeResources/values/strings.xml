@@ -21,4 +21,12 @@
         <item quantity="other">%1$d receipts couldn’t be loaded this time. They will be tried again.</item>
     </plurals>
     <string name="receipts_retry">Retry</string>
+
+    <string name="daily_spending_channel_name">Daily spending</string>
+    <string name="daily_spending_channel_description">Yesterday’s total, every morning</string>
+    <string name="daily_spending_title">Yesterday you spent %1$s</string>
+    <plurals name="daily_spending_text">
+        <item quantity="one">From %1$d receipt</item>
+        <item quantity="other">From %1$d receipts</item>
+    </plurals>
 </resources>
