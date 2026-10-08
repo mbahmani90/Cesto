@@ -58,6 +58,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.pdfbox.android)
             implementation(libs.androidx.work.runtime)
+            implementation(libs.androidx.core.ktx)
         }
         getByName("androidHostTest").dependencies {
             implementation(libs.sqldelight.sqliteDriver)
