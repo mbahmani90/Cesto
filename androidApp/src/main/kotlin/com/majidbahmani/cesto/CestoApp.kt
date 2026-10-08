@@ -3,6 +3,7 @@ package com.majidbahmani.cesto
 import android.app.Application
 import com.majidbahmani.cesto.auth.AndroidGmailAuthorizer
 import com.majidbahmani.cesto.di.initKoin
+import com.majidbahmani.cesto.di.startBackgroundWork
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 
@@ -18,6 +19,6 @@ class CestoApp : Application() {
         initKoin(gmailAuthorizer = gmailAuthorizer) {
             androidLogger()
             androidContext(this@CestoApp)
-        }
+        }.startBackgroundWork()
     }
 }
