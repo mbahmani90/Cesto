@@ -6,6 +6,7 @@ import com.majidbahmani.cesto.di.initKoin
 import com.majidbahmani.cesto.di.startBackgroundWork
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
+import org.koin.androidx.workmanager.koin.workManagerFactory
 
 class CestoApp : Application() {
 
@@ -19,6 +20,8 @@ class CestoApp : Application() {
         initKoin(gmailAuthorizer = gmailAuthorizer) {
             androidLogger()
             androidContext(this@CestoApp)
+            // Initializes WorkManager with Koin's WorkerFactory (its automatic setup is off in the manifest).
+            workManagerFactory()
         }.startBackgroundWork()
     }
 }

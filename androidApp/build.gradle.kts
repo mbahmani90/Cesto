@@ -15,6 +15,7 @@ dependencies {
 
     implementation(libs.androidx.activity.compose)
     implementation(libs.koin.android)
+    implementation(libs.koin.androidx.workmanager)
     implementation(libs.play.services.auth)
 
     implementation(libs.compose.uiToolingPreview)
