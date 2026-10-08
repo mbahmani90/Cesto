@@ -11,6 +11,8 @@ import com.majidbahmani.cesto.feature.receipts.data.local.ReceiptFileStore
 import com.majidbahmani.cesto.feature.receipts.data.work.WorkManagerDailySpendingScheduler
 import com.majidbahmani.cesto.feature.receipts.domain.repository.DailySpendingScheduler
 import com.majidbahmani.cesto.feature.receipts.presentation.notification.DailySpendingNotifier
+import com.majidbahmani.cesto.feature.receipts.presentation.work.DailySpendingWorker
+import org.koin.androidx.workmanager.dsl.workerOf
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -20,4 +22,6 @@ internal actual val receiptPlatformModule: Module = module {
     // Only created here; CestoApp and the worker call it (see DailySpendingScheduler).
     single<DailySpendingScheduler> { WorkManagerDailySpendingScheduler(workManager = WorkManager.getInstance(get<Context>())) }
     single { DailySpendingNotifier(context = get<Context>()) }
+    // Created by Koin's WorkerFactory (workManagerFactory() in CestoApp), so it gets its use cases.
+    workerOf(::DailySpendingWorker)
 }
