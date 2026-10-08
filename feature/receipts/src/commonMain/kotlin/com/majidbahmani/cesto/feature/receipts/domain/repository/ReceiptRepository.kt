@@ -1,5 +1,6 @@
 package com.majidbahmani.cesto.feature.receipts.domain.repository
 
+import com.majidbahmani.cesto.feature.receipts.domain.model.DailySpending
 import com.majidbahmani.cesto.feature.receipts.domain.model.Receipt
 import com.majidbahmani.cesto.feature.receipts.domain.model.SyncResult
 import kotlinx.coroutines.flow.Flow
@@ -10,4 +11,7 @@ interface ReceiptRepository {
 
     /** Finds new receipt emails from the last [lookBackMonths] months in Gmail and downloads their PDFs. */
     suspend fun sync(lookBackMonths: Int): SyncResult
+
+    /** What was paid for the receipts bought between [fromMillis] and [toMillis] (epoch millis, both included). */
+    suspend fun spendingBetween(fromMillis: Long, toMillis: Long): DailySpending
 }
