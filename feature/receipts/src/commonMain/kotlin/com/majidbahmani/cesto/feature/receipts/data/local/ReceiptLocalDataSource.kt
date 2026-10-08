@@ -10,6 +10,7 @@ import com.majidbahmani.cesto.feature.receipts.data.embedding.productEmbedText
 import com.majidbahmani.cesto.feature.receipts.data.extraction.ExtractedLine
 import com.majidbahmani.cesto.feature.receipts.data.parser.ParsedReceipt
 import com.majidbahmani.cesto.feature.receipts.data.remote.PdfAttachmentRef
+import com.majidbahmani.cesto.feature.receipts.domain.model.DailySpending
 import com.majidbahmani.cesto.feature.receipts.domain.model.ReceiptStatus
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -26,6 +27,7 @@ class ReceiptLocalDataSource(
     private val products = database.productQueries
     private val items = database.receiptItemQueries
     private val embeddings = database.productEmbeddingQueries
+    private val insights = database.insightsQueries
 
     fun observeAll(): Flow<List<ReceiptRow>> = receipts.selectAll().asFlow().mapToList(ioDispatcher)
 
@@ -119,6 +121,15 @@ class ReceiptLocalDataSource(
     /** Called once every product has a vector of [model]: older models' vectors are no longer searched. */
     suspend fun deleteEmbeddingsOfOtherModels(model: String) = withContext(ioDispatcher) {
         embeddings.deleteOtherModels(model)
+    }
+
+    /**
+     * What was paid (TOTAL A PAGAR) for receipts bought between [fromMillis] and [toMillis], both included. Same
+     * query as the chat's sumSpending tool; receipts without a total yet aren't counted.
+     */
+    suspend fun spendingBetween(fromMillis: Long, toMillis: Long): DailySpending = withContext(ioDispatcher) {
+        val total = insights.totalSpending(fromMillis, toMillis).executeAsOne()
+        DailySpending(totalCents = total.cents ?: 0, receiptCount = total.receipts.toInt())
     }
 
     suspend fun markFailed(id: Long) = withContext(ioDispatcher) {

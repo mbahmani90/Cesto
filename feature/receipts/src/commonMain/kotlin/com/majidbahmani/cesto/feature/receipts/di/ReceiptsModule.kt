@@ -10,6 +10,7 @@ import com.majidbahmani.cesto.feature.receipts.data.remote.GmailTokenProvider
 import com.majidbahmani.cesto.feature.receipts.data.remote.KtorGmailApi
 import com.majidbahmani.cesto.feature.receipts.data.repository.ReceiptRepositoryImpl
 import com.majidbahmani.cesto.feature.receipts.domain.repository.ReceiptRepository
+import com.majidbahmani.cesto.feature.receipts.domain.usecase.GetYesterdaySpendingUseCase
 import com.majidbahmani.cesto.feature.receipts.domain.usecase.ObserveReceiptsUseCase
 import com.majidbahmani.cesto.feature.receipts.domain.usecase.SyncReceiptsUseCase
 import com.majidbahmani.cesto.feature.receipts.presentation.viewmodel.ReceiptsViewModel
@@ -51,5 +52,6 @@ val receiptsModule = module {
     }
     factory { ObserveReceiptsUseCase(repository = get()) }
     factory { SyncReceiptsUseCase(repository = get()) }
+    factory { GetYesterdaySpendingUseCase(repository = get()) }
     viewModel { ReceiptsViewModel(observeReceipts = get(), syncReceipts = get()) }
 }

@@ -19,6 +19,7 @@ import com.majidbahmani.cesto.feature.receipts.data.remote.decodeGmailBase64
 import com.majidbahmani.cesto.feature.receipts.data.remote.dto.MessageDto
 import com.majidbahmani.cesto.feature.receipts.data.remote.pdfAttachments
 import com.majidbahmani.cesto.feature.receipts.data.remote.receivedAtMillis
+import com.majidbahmani.cesto.feature.receipts.domain.model.DailySpending
 import com.majidbahmani.cesto.feature.receipts.domain.model.Receipt
 import com.majidbahmani.cesto.feature.receipts.domain.model.ReceiptStatus
 import com.majidbahmani.cesto.feature.receipts.domain.model.SyncFailure
@@ -70,6 +71,8 @@ class ReceiptRepositoryImpl(
     }
 
     override fun observeReceipts(): Flow<List<Receipt>> = local.observeAll().map { rows -> rows.map { it.toDomain() } }
+
+    override suspend fun spendingBetween(fromMillis: Long, toMillis: Long): DailySpending = local.spendingBetween(fromMillis, toMillis)
 
     override suspend fun sync(lookBackMonths: Int): SyncResult = try {
         // Read before handling new emails, so this sync's own failures aren't retried twice.

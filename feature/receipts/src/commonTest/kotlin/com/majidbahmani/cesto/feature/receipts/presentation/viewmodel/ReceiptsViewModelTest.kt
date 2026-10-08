@@ -1,5 +1,6 @@
 package com.majidbahmani.cesto.feature.receipts.presentation.viewmodel
 
+import com.majidbahmani.cesto.feature.receipts.domain.model.DailySpending
 import com.majidbahmani.cesto.feature.receipts.domain.model.Receipt
 import com.majidbahmani.cesto.feature.receipts.domain.model.ReceiptStatus
 import com.majidbahmani.cesto.feature.receipts.domain.model.SyncFailure
@@ -46,6 +47,8 @@ class ReceiptsViewModelTest {
             syncCalls++
             return syncAnswer.await()
         }
+
+        override suspend fun spendingBetween(fromMillis: Long, toMillis: Long) = DailySpending(totalCents = 0, receiptCount = 0)
     }
 
     private val dispatcher = StandardTestDispatcher()
