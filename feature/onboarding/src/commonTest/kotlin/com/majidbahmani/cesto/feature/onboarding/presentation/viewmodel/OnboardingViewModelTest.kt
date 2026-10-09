@@ -1,9 +1,13 @@
 package com.majidbahmani.cesto.feature.onboarding.presentation.viewmodel
 
 import com.majidbahmani.cesto.feature.onboarding.domain.model.GmailConnectionResult
+import com.majidbahmani.cesto.feature.onboarding.domain.model.SignInResult
 import com.majidbahmani.cesto.feature.onboarding.domain.repository.GmailConnectionRepository
+import com.majidbahmani.cesto.feature.onboarding.domain.repository.SignInRepository
 import com.majidbahmani.cesto.feature.onboarding.domain.usecase.CheckGmailConnectionUseCase
+import com.majidbahmani.cesto.feature.onboarding.domain.usecase.CheckSignInUseCase
 import com.majidbahmani.cesto.feature.onboarding.domain.usecase.ConnectGmailUseCase
+import com.majidbahmani.cesto.feature.onboarding.domain.usecase.SignInUseCase
 import com.majidbahmani.cesto.feature.onboarding.presentation.viewmodel.OnboardingUiState.ErrorReason
 import com.majidbahmani.cesto.feature.onboarding.presentation.viewmodel.OnboardingUiState.Status
 import kotlin.test.AfterTest
@@ -23,13 +27,30 @@ import kotlinx.coroutines.test.setMain
 @OptIn(ExperimentalCoroutinesApi::class)
 class OnboardingViewModelTest {
 
-    /** Suspends until the test answers, so in-between states can be checked. */
+    /** Suspend until the test answers, so in-between states can be checked. */
+    private class FakeSignInRepository : SignInRepository {
+        val isSignedInAnswer = CompletableDeferred<Boolean>()
+        var signInAnswer = CompletableDeferred<SignInResult>()
+        var signInCalls = 0
+
+        override suspend fun isSignedIn(): Boolean = isSignedInAnswer.await()
+
+        override suspend fun signIn(): SignInResult {
+            signInCalls++
+            return signInAnswer.await()
+        }
+    }
+
     private class FakeGmailConnectionRepository : GmailConnectionRepository {
         val isConnectedAnswer = CompletableDeferred<Boolean>()
         var connectAnswer = CompletableDeferred<GmailConnectionResult>()
+        var isConnectedCalls = 0
         var connectCalls = 0
 
-        override suspend fun isConnected(): Boolean = isConnectedAnswer.await()
+        override suspend fun isConnected(): Boolean {
+            isConnectedCalls++
+            return isConnectedAnswer.await()
+        }
 
         override suspend fun connect(): GmailConnectionResult {
             connectCalls++
@@ -38,7 +59,8 @@ class OnboardingViewModelTest {
     }
 
     private val dispatcher = StandardTestDispatcher()
-    private val repository = FakeGmailConnectionRepository()
+    private val accounts = FakeSignInRepository()
+    private val gmail = FakeGmailConnectionRepository()
 
     @BeforeTest
     fun setUp() = Dispatchers.setMain(dispatcher)
@@ -47,84 +69,146 @@ class OnboardingViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     private fun viewModel() = OnboardingViewModel(
-        checkGmailConnection = CheckGmailConnectionUseCase(repository),
-        connectGmail = ConnectGmailUseCase(repository)
+        checkSignIn = CheckSignInUseCase(accounts),
+        signIn = SignInUseCase(accounts),
+        checkGmailConnection = CheckGmailConnectionUseCase(gmail),
+        connectGmail = ConnectGmailUseCase(gmail)
     )
 
-    /** A view model that finished the start check with "not connected". */
-    private fun TestScope.readyViewModel(): OnboardingViewModel = viewModel().also {
-        repository.isConnectedAnswer.complete(false)
+    /** A view model that finished the start check: not signed in, or signed in without Gmail. */
+    private fun TestScope.readyViewModel(signedIn: Boolean = false): OnboardingViewModel = viewModel().also {
+        accounts.isSignedInAnswer.complete(signedIn)
+        gmail.isConnectedAnswer.complete(false)
         runCurrent()
     }
 
     @Test
-    fun startsChecking_thenConnectedWhenGrantedBefore() = runTest(dispatcher) {
+    fun startsChecking_thenConnectedWhenSignedInAndGrantedBefore() = runTest(dispatcher) {
         val viewModel = viewModel()
         assertEquals(Status.CHECKING, viewModel.uiState.value.status)
 
-        repository.isConnectedAnswer.complete(true)
+        accounts.isSignedInAnswer.complete(true)
+        gmail.isConnectedAnswer.complete(true)
         runCurrent()
 
         assertEquals(Status.CONNECTED, viewModel.uiState.value.status)
     }
 
     @Test
-    fun startCheck_showsIntroWhenNotConnected() = runTest(dispatcher) {
-        assertEquals(OnboardingUiState(status = Status.READY), readyViewModel().uiState.value)
+    fun notSignedIn_showsIntro_withoutAskingGmail() = runTest(dispatcher) {
+        assertEquals(OnboardingUiState(status = Status.READY, signedIn = false), readyViewModel().uiState.value)
+        assertEquals(0, gmail.isConnectedCalls)
     }
 
     @Test
-    fun connect_showsProgressThenConnected() = runTest(dispatcher) {
+    fun signedInWithoutGmail_showsIntroForGmailOnly() = runTest(dispatcher) {
+        assertEquals(OnboardingUiState(status = Status.READY, signedIn = true), readyViewModel(signedIn = true).uiState.value)
+    }
+
+    @Test
+    fun continue_signsInThenConnectsGmail() = runTest(dispatcher) {
         val viewModel = readyViewModel()
 
-        viewModel.onConnectGmail()
-        assertEquals(Status.CONNECTING, viewModel.uiState.value.status)
+        viewModel.onContinue()
+        runCurrent()
+        assertEquals(Status.SIGNING_IN, viewModel.uiState.value.status)
 
-        repository.connectAnswer.complete(GmailConnectionResult.CONNECTED)
+        accounts.signInAnswer.complete(SignInResult.SIGNED_IN)
+        runCurrent()
+        assertEquals(OnboardingUiState(status = Status.CONNECTING, signedIn = true), viewModel.uiState.value)
+
+        gmail.connectAnswer.complete(GmailConnectionResult.CONNECTED)
         runCurrent()
         assertEquals(Status.CONNECTED, viewModel.uiState.value.status)
     }
 
     @Test
-    fun cancel_returnsToIntroWithoutError() = runTest(dispatcher) {
-        val viewModel = readyViewModel()
+    fun signedIn_continueOnlyAsksGmail() = runTest(dispatcher) {
+        val viewModel = readyViewModel(signedIn = true)
 
-        viewModel.onConnectGmail()
-        repository.connectAnswer.complete(GmailConnectionResult.CANCELLED)
+        viewModel.onContinue()
+        gmail.connectAnswer.complete(GmailConnectionResult.CONNECTED)
         runCurrent()
 
-        assertEquals(OnboardingUiState(status = Status.READY, error = null), viewModel.uiState.value)
+        assertEquals(0, accounts.signInCalls)
+        assertEquals(Status.CONNECTED, viewModel.uiState.value.status)
     }
 
     @Test
-    fun deniedAndFailed_showReason_andRetryClearsIt() = runTest(dispatcher) {
+    fun signInCancelled_returnsToIntroWithoutError_andNoGmailDialog() = runTest(dispatcher) {
         val viewModel = readyViewModel()
 
-        viewModel.onConnectGmail()
-        repository.connectAnswer.complete(GmailConnectionResult.PERMISSION_DENIED)
+        viewModel.onContinue()
+        accounts.signInAnswer.complete(SignInResult.CANCELLED)
         runCurrent()
-        assertEquals(OnboardingUiState(status = Status.READY, error = ErrorReason.PERMISSION_DENIED), viewModel.uiState.value)
 
-        repository.connectAnswer = CompletableDeferred()
-        viewModel.onConnectGmail()
-        assertEquals(OnboardingUiState(status = Status.CONNECTING, error = null), viewModel.uiState.value)
+        assertEquals(OnboardingUiState(status = Status.READY), viewModel.uiState.value)
+        assertEquals(0, gmail.connectCalls)
+    }
 
-        repository.connectAnswer.complete(GmailConnectionResult.FAILED)
+    @Test
+    fun signInErrors_showTheReason() = runTest(dispatcher) {
+        val viewModel = readyViewModel()
+        val expected = mapOf(
+            SignInResult.NO_GOOGLE_ACCOUNT to ErrorReason.NO_GOOGLE_ACCOUNT,
+            SignInResult.REJECTED to ErrorReason.SIGN_IN_REJECTED,
+            SignInResult.FAILED to ErrorReason.FAILED
+        )
+        expected.forEach { (result, reason) ->
+            accounts.signInAnswer = CompletableDeferred()
+            viewModel.onContinue()
+            runCurrent()
+            assertEquals(null, viewModel.uiState.value.error) // a new attempt clears the last error
+            accounts.signInAnswer.complete(result)
+            runCurrent()
+            assertEquals(OnboardingUiState(status = Status.READY, error = reason), viewModel.uiState.value)
+        }
+    }
+
+    @Test
+    fun gmailDeniedAfterSignIn_staysSignedIn_retryOnlyAsksGmail() = runTest(dispatcher) {
+        val viewModel = readyViewModel()
+
+        viewModel.onContinue()
+        accounts.signInAnswer.complete(SignInResult.SIGNED_IN)
+        gmail.connectAnswer.complete(GmailConnectionResult.PERMISSION_DENIED)
+        runCurrent()
+        assertEquals(
+            OnboardingUiState(status = Status.READY, signedIn = true, error = ErrorReason.PERMISSION_DENIED),
+            viewModel.uiState.value
+        )
+
+        gmail.connectAnswer = CompletableDeferred()
+        viewModel.onContinue()
+        gmail.connectAnswer.complete(GmailConnectionResult.FAILED)
         runCurrent()
         assertEquals(ErrorReason.FAILED, viewModel.uiState.value.error)
+        assertEquals(1, accounts.signInCalls)
+    }
+
+    @Test
+    fun gmailCancelled_returnsToIntroWithoutError() = runTest(dispatcher) {
+        val viewModel = readyViewModel(signedIn = true)
+
+        viewModel.onContinue()
+        gmail.connectAnswer.complete(GmailConnectionResult.CANCELLED)
+        runCurrent()
+
+        assertEquals(OnboardingUiState(status = Status.READY, signedIn = true), viewModel.uiState.value)
     }
 
     @Test
     fun doubleTap_andTapDuringStartCheck_requestOnlyOnce() = runTest(dispatcher) {
         val viewModel = viewModel()
-        viewModel.onConnectGmail() // still checking: ignored
-        repository.isConnectedAnswer.complete(false)
+        viewModel.onContinue() // still checking: ignored
+        accounts.isSignedInAnswer.complete(false)
         runCurrent()
 
-        viewModel.onConnectGmail()
-        viewModel.onConnectGmail() // already connecting: ignored
+        viewModel.onContinue()
+        runCurrent()
+        viewModel.onContinue() // already signing in: ignored
         runCurrent()
 
-        assertEquals(1, repository.connectCalls)
+        assertEquals(1, accounts.signInCalls)
     }
 }

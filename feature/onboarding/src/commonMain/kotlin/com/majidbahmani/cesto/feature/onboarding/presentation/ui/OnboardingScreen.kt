@@ -40,9 +40,13 @@ import com.majidbahmani.cesto.feature.onboarding.presentation.viewmodel.Onboardi
 import com.majidbahmani.cesto.feature.onboarding.resources.Res
 import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_connect
 import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_connect_hint
+import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_continue_google
+import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_continue_google_hint
 import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_description
 import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_error_failed
+import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_error_no_google_account
 import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_error_permission_denied
+import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_error_sign_in_rejected
 import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_never_change
 import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_never_title
 import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_never_upload
@@ -67,18 +71,13 @@ internal fun OnboardingRoute(onConnect: () -> Unit, onTryDemo: () -> Unit, viewM
 
     OnboardingScreen(
         uiState = uiState,
-        onConnectGmail = viewModel::onConnectGmail,
+        onContinue = viewModel::onContinue,
         onTryDemo = onTryDemo
     )
 }
 
 @Composable
-internal fun OnboardingScreen(
-    uiState: OnboardingUiState,
-    onConnectGmail: () -> Unit,
-    onTryDemo: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+internal fun OnboardingScreen(uiState: OnboardingUiState, onContinue: () -> Unit, onTryDemo: () -> Unit, modifier: Modifier = Modifier) {
     Surface(modifier = modifier.fillMaxSize()) {
         when (uiState.status) {
             // Nothing to decide yet; also shown for the moment before navigating on.
@@ -86,10 +85,11 @@ internal fun OnboardingScreen(
                 CircularProgressIndicator()
             }
 
-            Status.READY, Status.CONNECTING -> IntroContent(
-                isConnecting = uiState.status == Status.CONNECTING,
+            Status.READY, Status.SIGNING_IN, Status.CONNECTING -> IntroContent(
+                isBusy = uiState.status != Status.READY,
+                signedIn = uiState.signedIn,
                 error = uiState.error,
-                onConnectGmail = onConnectGmail,
+                onContinue = onContinue,
                 onTryDemo = onTryDemo
             )
         }
@@ -97,7 +97,7 @@ internal fun OnboardingScreen(
 }
 
 @Composable
-private fun IntroContent(isConnecting: Boolean, error: ErrorReason?, onConnectGmail: () -> Unit, onTryDemo: () -> Unit) {
+private fun IntroContent(isBusy: Boolean, signedIn: Boolean, error: ErrorReason?, onContinue: () -> Unit, onTryDemo: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -146,25 +146,25 @@ private fun IntroContent(isConnecting: Boolean, error: ErrorReason?, onConnectGm
             if (error != null) ErrorMessage(error)
 
             Button(
-                onClick = onConnectGmail,
-                enabled = !isConnecting,
+                onClick = onContinue,
+                enabled = !isBusy,
                 modifier = Modifier.fillMaxWidth().height(52.dp)
             ) {
-                if (isConnecting) {
+                if (isBusy) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                 } else {
-                    Text(stringResource(Res.string.onboarding_connect))
+                    Text(stringResource(if (signedIn) Res.string.onboarding_connect else Res.string.onboarding_continue_google))
                 }
             }
             Text(
-                text = stringResource(Res.string.onboarding_connect_hint),
+                text = stringResource(if (signedIn) Res.string.onboarding_connect_hint else Res.string.onboarding_continue_google_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
             OutlinedButton(
                 onClick = onTryDemo,
-                enabled = !isConnecting,
+                enabled = !isBusy,
                 modifier = Modifier.fillMaxWidth().height(52.dp)
             ) {
                 Text(stringResource(Res.string.onboarding_try_demo))
@@ -195,6 +195,8 @@ private fun PrivacyCard(title: String, items: List<String>, mark: String, markCo
 @Composable
 private fun ErrorMessage(error: ErrorReason) {
     val text = when (error) {
+        ErrorReason.NO_GOOGLE_ACCOUNT -> stringResource(Res.string.onboarding_error_no_google_account)
+        ErrorReason.SIGN_IN_REJECTED -> stringResource(Res.string.onboarding_error_sign_in_rejected)
         ErrorReason.PERMISSION_DENIED -> stringResource(Res.string.onboarding_error_permission_denied)
         ErrorReason.FAILED -> stringResource(Res.string.onboarding_error_failed)
     }
@@ -212,7 +214,7 @@ private fun ErrorMessage(error: ErrorReason) {
 @Composable
 private fun OnboardingScreenPreview() {
     CestoTheme {
-        OnboardingScreen(uiState = OnboardingUiState(status = Status.READY), onConnectGmail = {}, onTryDemo = {})
+        OnboardingScreen(uiState = OnboardingUiState(status = Status.READY), onContinue = {}, onTryDemo = {})
     }
 }
 
@@ -221,8 +223,8 @@ private fun OnboardingScreenPreview() {
 private fun OnboardingScreenErrorDarkPreview() {
     CestoTheme(darkTheme = true) {
         OnboardingScreen(
-            uiState = OnboardingUiState(status = Status.READY, error = ErrorReason.PERMISSION_DENIED),
-            onConnectGmail = {},
+            uiState = OnboardingUiState(status = Status.READY, signedIn = true, error = ErrorReason.PERMISSION_DENIED),
+            onContinue = {},
             onTryDemo = {}
         )
     }
