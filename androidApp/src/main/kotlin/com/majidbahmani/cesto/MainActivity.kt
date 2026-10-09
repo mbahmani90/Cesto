@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 class MainActivity : ComponentActivity() {
 
     private val gmailAuthorizer get() = (application as CestoApp).gmailAuthorizer
+    private val googleIdTokenProvider get() = (application as CestoApp).googleIdTokenProvider
 
     // Registered before onCreate returns, so a result after Activity recreation still arrives.
     private val consentLauncher = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {
@@ -26,6 +27,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         gmailAuthorizer.attach(consentLauncher)
+        googleIdTokenProvider.attach(this)
         if (savedInstanceState == null) askForNotificationPermission()
 
         setContent {
@@ -35,6 +37,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         gmailAuthorizer.detach(consentLauncher)
+        googleIdTokenProvider.detach(this)
         super.onDestroy()
     }
 

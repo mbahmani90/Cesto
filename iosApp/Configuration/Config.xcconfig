@@ -10,6 +10,6 @@ MARKETING_VERSION=1.0
 // uses the system SQLite.
 OTHER_LDFLAGS = $(inherited) -lsqlite3
 
-// Google OAuth iOS client (GOOGLE_IOS_CLIENT_ID, GOOGLE_IOS_REVERSED_CLIENT_ID), gitignored.
+// Google OAuth iOS client (GOOGLE_IOS_CLIENT_ID, GOOGLE_IOS_REVERSED_CLIENT_ID) and IDENTITY_PLATFORM_API_KEY, gitignored.
 // Copy Secrets.xcconfig.example to Secrets.xcconfig and fill it in; the app builds without it.
 #include? "Secrets.xcconfig"

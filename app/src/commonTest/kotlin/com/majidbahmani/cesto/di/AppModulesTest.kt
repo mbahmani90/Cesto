@@ -1,6 +1,9 @@
 package com.majidbahmani.cesto.di
 
 import app.cash.sqldelight.db.SqlDriver
+import com.majidbahmani.cesto.account.AccountRepository
+import com.majidbahmani.cesto.account.SessionStore
+import com.majidbahmani.cesto.account.Sessions
 import com.majidbahmani.cesto.feature.chat.presentation.viewmodel.ChatViewModel
 import com.majidbahmani.cesto.feature.onboarding.presentation.viewmodel.OnboardingViewModel
 import com.majidbahmani.cesto.feature.receipts.data.local.PdfTextExtractor
@@ -11,6 +14,8 @@ import com.majidbahmani.cesto.feature.receipts.presentation.viewmodel.ReceiptsVi
 import com.majidbahmani.cesto.feature.settings.presentation.viewmodel.SettingsViewModel
 import com.majidbahmani.cesto.gmailauth.GmailAuthError
 import com.majidbahmani.cesto.gmailauth.GmailAuthorizer
+import com.majidbahmani.cesto.gmailauth.GoogleIdTokenProvider
+import com.majidbahmani.cesto.gmailauth.GoogleSignInError
 import com.majidbahmani.cesto.llm.GeminiKeyStore
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
@@ -37,6 +42,15 @@ class AppModulesTest {
             onFailure(GmailAuthError.NOT_GRANTED)
     }
 
+    private object FakeGoogleIdTokenProvider : GoogleIdTokenProvider {
+        override fun signIn(onSuccess: (String) -> Unit, onFailure: (GoogleSignInError) -> Unit) = onFailure(GoogleSignInError.CANCELLED)
+    }
+
+    private object UnusedSessionStore : SessionStore {
+        override val sessions = flowOf(Sessions())
+        override suspend fun save(sessions: Sessions) = error("not used")
+    }
+
     private object UnusedFileStore : ReceiptFileStore {
         override suspend fun save(fileName: String, bytes: ByteArray) = error("not used")
         override suspend fun read(relativePath: String) = error("not used")
@@ -58,11 +72,15 @@ class AppModulesTest {
         single<ReceiptFileStore> { UnusedFileStore }
         single<PdfTextExtractor> { UnusedExtractor }
         single<GeminiKeyStore> { UnusedKeyStore }
+        single<SessionStore> { UnusedSessionStore }
     }
 
     // Local KoinApplication: tests never touch the global Koin instance. Later modules override earlier ones.
     private val app = koinApplication {
-        modules(listOf(platformServicesModule(FakeGmailAuthorizer)) + appModules + platformReplacements)
+        modules(
+            listOf(platformServicesModule(PlatformServices(FakeGmailAuthorizer, FakeGoogleIdTokenProvider, "AIza-test"))) + appModules +
+                platformReplacements
+        )
     }
 
     // ViewModels launch in viewModelScope (Dispatchers.Main), which doesn't exist in JVM tests.
@@ -88,6 +106,11 @@ class AppModulesTest {
     @Test
     fun gmailAuthorizer_isThePlatformInstance() {
         assertSame<GmailAuthorizer>(FakeGmailAuthorizer, app.koin.get())
+    }
+
+    @Test
+    fun accountRepository_resolvesWithTheApiKey() {
+        app.koin.get<AccountRepository>()
     }
 
     @Test
