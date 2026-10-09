@@ -92,7 +92,7 @@ API calls     ─► validIdToken(): refreshed through securetoken.googleapis.co
    `SessionStore` with every signed-in account and the active one (refresh tokens encrypted: Android
    Keystore / iOS Keychain), and `AccountRepository` (`signIn`, `accounts`, `activeAccount`, `switchTo`,
    `validIdToken`, `signOut`).
-2. **Platform sign-in.** Android Credential Manager ("Sign in with Google") and iOS GoogleSignIn return the
+2. **Platform sign-in.** ✅ Onboarding's **Continue with Google** signs in, then asks for Gmail. Android Credential Manager ("Sign in with Google") and iOS GoogleSignIn return the
    Google ID token; Gmail permission stays a second step (Google skips the account picker the second time).
 3. **One database per account.** `cesto-<localId>.db`, so receipts never mix; an account switcher in Settings;
    background work runs for the active account.
@@ -125,7 +125,7 @@ module; everything else only knows what it needs.
 | [`androidApp`](androidApp) | Android entry point: `CestoApp` starts Koin, `MainActivity`, `AndroidGmailAuthorizer` (Google Identity `AuthorizationClient`) and `AndroidGoogleIdTokenProvider` (Credential Manager) |
 | [`iosApp`](iosApp) | iOS entry point (SwiftUI), `GoogleGmailAuthorizer` and `GoogleIdTokenSignIn` (GoogleSignIn, Swift Package) |
 | [`:app`](app/src) | Composition root: `App()` with `CestoTheme`, the bottom bar (**Ask · Receipts · Settings**) and the `NavHost`, `initKoin()` with all Koin modules; builds the iOS framework `Shared` |
-| [`:feature:onboarding`](feature/onboarding/src) | First screen: what Cesto reads and never does, **Connect Gmail**, **Try demo** |
+| [`:feature:onboarding`](feature/onboarding/src) | First screen: what Cesto reads and never does, **Continue with Google** (sign in, then Gmail permission), **Try demo** |
 | [`:feature:receipts`](feature/receipts/src) | Receipt sync (Gmail REST with Ktor → database → PDF files), item extraction with Gemini, and the receipt list with pull to refresh |
 | [`:feature:chat`](feature/chat/src) | **Ask** tab: the agent loop (`AskQuestionUseCase`), Gemini function calling, the SQL tools and the chat screen |
 | [`:feature:settings`](feature/settings/src) | **Settings** tab: your own Gemini key in two steps, tested before saving, and an **Enable billing** link; later Gmail and privacy |

@@ -11,10 +11,14 @@
     <string name="onboarding_never_change">Send, delete or change your emails</string>
     <string name="onboarding_never_upload">Upload your emails to a server</string>
 
+    <string name="onboarding_continue_google">Continue with Google</string>
+    <string name="onboarding_continue_google_hint">Sign in with Google, then allow read-only access to Gmail.</string>
     <string name="onboarding_connect">Connect Gmail</string>
     <string name="onboarding_connect_hint">Google will ask you to allow read-only access to Gmail.</string>
     <string name="onboarding_try_demo">Try demo with sample receipts</string>
 
+    <string name="onboarding_error_no_google_account">Add a Google account to this phone, then try again.</string>
+    <string name="onboarding_error_sign_in_rejected">Couldn’t sign in to Cesto right now. Please try again later.</string>
     <string name="onboarding_error_permission_denied">Cesto needs the Gmail permission to find your receipts. Tap Connect Gmail and keep the Gmail box ticked.</string>
     <string name="onboarding_error_failed">Couldn’t connect to Google. Check your internet connection and try again.</string>
 </resources>
