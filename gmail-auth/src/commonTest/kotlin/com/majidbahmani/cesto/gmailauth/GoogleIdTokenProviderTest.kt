@@ -9,6 +9,8 @@ class GoogleIdTokenProviderTest {
     private class FakeProvider(private val answer: (onSuccess: (String) -> Unit, onFailure: (GoogleSignInError) -> Unit) -> Unit) :
         GoogleIdTokenProvider {
         override fun signIn(onSuccess: (String) -> Unit, onFailure: (GoogleSignInError) -> Unit) = answer(onSuccess, onFailure)
+
+        override fun signOut() = Unit
     }
 
     @Test

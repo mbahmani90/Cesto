@@ -1,6 +1,12 @@
 <resources>
     <string name="settings_title">Settings</string>
 
+    <string name="settings_account_title">Account</string>
+    <string name="settings_account_signed_in_as">Signed in with Google as</string>
+    <string name="settings_sign_out">Sign out</string>
+    <string name="settings_sign_out_confirm_title">Sign out of Cesto?</string>
+    <string name="settings_sign_out_confirm_text">Your receipts and Gemini key stay on this phone. Sign in again with Google to use Cesto.</string>
+
     <string name="settings_gemini_title">Gemini</string>
     <string name="settings_gemini_intro">Cesto uses Google’s Gemini with your own API key to read the items on your receipts and answer your questions. The key is stored encrypted on this phone and only sent to Google.</string>
 

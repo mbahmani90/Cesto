@@ -2,6 +2,7 @@ package com.majidbahmani.cesto.auth
 
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
@@ -69,6 +70,19 @@ class AndroidGoogleIdTokenProvider(private val webClientId: String) : GoogleIdTo
             } catch (e: Exception) {
                 Log.w(TAG, "Google ID token unreadable", e)
                 onFailure(GoogleSignInError.FAILED)
+            }
+        }
+    }
+
+    override fun signOut() {
+        val activity = activity ?: return
+        activity.lifecycleScope.launch {
+            try {
+                CredentialManager.create(activity).clearCredentialState(ClearCredentialStateRequest())
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "clearing the credential state failed", e) // the Cesto account is signed out anyway
             }
         }
     }

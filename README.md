@@ -128,7 +128,7 @@ module; everything else only knows what it needs.
 | [`:feature:onboarding`](feature/onboarding/src) | First screen: what Cesto reads and never does, **Continue with Google** (sign in, then Gmail permission), **Try demo** |
 | [`:feature:receipts`](feature/receipts/src) | Receipt sync (Gmail REST with Ktor → database → PDF files), item extraction with Gemini, and the receipt list with pull to refresh |
 | [`:feature:chat`](feature/chat/src) | **Ask** tab: the agent loop (`AskQuestionUseCase`), Gemini function calling, the SQL tools and the chat screen |
-| [`:feature:settings`](feature/settings/src) | **Settings** tab: your own Gemini key in two steps, tested before saving, and an **Enable billing** link; later Gmail and privacy |
+| [`:feature:settings`](feature/settings/src) | **Settings** tab: the signed-in account with **Sign out** (back to onboarding), your own Gemini key in two steps, tested before saving, and an **Enable billing** link; later Gmail and privacy |
 | [`:gmail-auth`](gmail-auth/src) | The Google SDK interfaces the platform apps implement: `GmailAuthorizer` (Gmail permission) and `GoogleIdTokenProvider` (Sign in with Google) |
 | [`:systemdesign`](systemdesign/src) | `CestoTheme`: light and dark colour schemes; components used by 2+ features (`CestoScreenTitle`) |
 | [`:core`](core/src) | Non-UI shared code: the Ktor `HttpClient` (OkHttp / Darwin engine) and its Koin module |

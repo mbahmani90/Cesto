@@ -85,7 +85,11 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-internal fun SettingsRoute(contentPadding: PaddingValues = PaddingValues(), viewModel: SettingsViewModel = koinViewModel()) {
+internal fun SettingsRoute(
+    onSignedOut: () -> Unit,
+    contentPadding: PaddingValues = PaddingValues(),
+    viewModel: SettingsViewModel = koinViewModel()
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val uriHandler = LocalUriHandler.current
     SettingsScreen(
@@ -100,7 +104,8 @@ internal fun SettingsRoute(contentPadding: PaddingValues = PaddingValues(), view
         onChangeKey = viewModel::onChangeKey,
         onCancelChange = viewModel::onCancelChange,
         onRemoveKey = viewModel::onRemoveKey,
-        contentPadding = contentPadding
+        contentPadding = contentPadding,
+        accountSection = { AccountSectionRoute(onSignedOut = onSignedOut) }
     )
 }
 
@@ -119,7 +124,9 @@ internal fun SettingsScreen(
     onRemoveKey: () -> Unit,
     modifier: Modifier = Modifier,
     /** Space the floating bottom bar covers. */
-    contentPadding: PaddingValues = PaddingValues()
+    contentPadding: PaddingValues = PaddingValues(),
+    /** The Account card, with its own ViewModel; empty in previews. */
+    accountSection: @Composable () -> Unit = {}
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
         Column(
@@ -130,6 +137,8 @@ internal fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             CestoScreenTitle(stringResource(Res.string.settings_title))
+
+            accountSection()
 
             Text(stringResource(Res.string.settings_gemini_title), style = MaterialTheme.typography.titleLarge)
             Text(
