@@ -1,3 +1,5 @@
+<img src="art/cesto-logo.svg" alt="Cesto logo" width="96" align="right">
+
 # Cesto
 
 [![CI](https://github.com/mbahmani90/Cesto/actions/workflows/ci.yml/badge.svg)](https://github.com/mbahmani90/Cesto/actions/workflows/ci.yml)
@@ -125,7 +127,7 @@ module; everything else only knows what it needs.
 | [`androidApp`](androidApp) | Android entry point: `CestoApp` starts Koin, `MainActivity`, `AndroidGmailAuthorizer` (Google Identity `AuthorizationClient`) and `AndroidGoogleIdTokenProvider` (Credential Manager) |
 | [`iosApp`](iosApp) | iOS entry point (SwiftUI), `GoogleGmailAuthorizer` and `GoogleIdTokenSignIn` (GoogleSignIn, Swift Package) |
 | [`:app`](app/src) | Composition root: `App()` with `CestoTheme`, the bottom bar (**Ask · Receipts · Settings**) and the `NavHost`, `initKoin()` with all Koin modules; builds the iOS framework `Shared` |
-| [`:feature:onboarding`](feature/onboarding/src) | First screen: what Cesto reads and never does, **Continue with Google** (sign in, then Gmail permission), **Try demo** |
+| [`:feature:onboarding`](feature/onboarding/src) | First screen: one card with the logo, the app name and **Continue with Google** (sign in, then Gmail permission) |
 | [`:feature:receipts`](feature/receipts/src) | Receipt sync (Gmail REST with Ktor → database → PDF files), item extraction with Gemini, and the receipt list with pull to refresh |
 | [`:feature:chat`](feature/chat/src) | **Ask** tab: the agent loop (`AskQuestionUseCase`), Gemini function calling, the SQL tools and the chat screen |
 | [`:feature:settings`](feature/settings/src) | **Settings** tab: the signed-in account with **Sign out** (back to onboarding), your own Gemini key in two steps, tested before saving, and an **Enable billing** link; later Gmail and privacy |
@@ -139,7 +141,7 @@ module; everything else only knows what it needs.
 ### Rules
 
 - **Features never depend on each other.** `:app` connects them with navigation lambdas
-  (`onConnect`, `onTryDemo`); each feature owns its route.
+  (`onConnect`, `onSignedOut`); each feature owns its route.
 - **Floating pill bottom bar in `:app`** (`TopLevelDestination`): tabs draw behind it and get a `contentPadding`
   so their last item ends above it. The selected tab is derived from the back stack, each
   tab keeps its state when you switch, and back goes to **Ask**, then closes the app. Onboarding and demo
@@ -229,7 +231,7 @@ The app needs OAuth clients in a Google Cloud project:
    - `Secrets.xcconfig`: `IDENTITY_PLATFORM_API_KEY = ...` (iOS uses its own iOS client ID).
    Before a Play release: add the Play App Signing SHA-1 to the Android client and restrict the key.
 
-Without these the app still builds and runs; "Connect Gmail" then shows an error and **Try demo** works.
+Without these the app still builds and runs; "Continue with Google" then shows an error.
 
 ### Run
 
