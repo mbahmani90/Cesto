@@ -78,9 +78,7 @@ fun App(modifier: Modifier = Modifier) {
                         navController.navigate(TopLevelDestination.START.route) {
                             popUpTo<OnboardingRoute> { inclusive = true }
                         }
-                    },
-                    // Demo: back returns to onboarding to connect Gmail for real.
-                    onTryDemo = { navController.navigate(ReceiptsRoute(demo = true)) }
+                    }
                 )
                 chatScreen(onOpenSettings = { navController.navigateToTab(TopLevelDestination.SETTINGS) }, contentPadding = contentPadding)
                 receiptsScreen(contentPadding)

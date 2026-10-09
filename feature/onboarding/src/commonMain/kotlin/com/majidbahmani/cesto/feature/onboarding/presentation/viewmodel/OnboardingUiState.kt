@@ -11,7 +11,7 @@ data class OnboardingUiState(
         /** Silent check at start: signed in and Gmail connected before? Shows a spinner, no intro yet. */
         CHECKING,
 
-        /** Intro with "Continue with Google" (or "Connect Gmail" once signed in) and "Try demo". */
+        /** The app name and "Continue with Google" (or "Connect Gmail" once signed in). */
         READY,
 
         /** Google's account picker is open, or the Cesto account is being created. */

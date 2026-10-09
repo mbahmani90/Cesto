@@ -1,10 +1,9 @@
 package com.majidbahmani.cesto.feature.onboarding.presentation.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,7 +18,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,7 +26,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -38,30 +35,21 @@ import com.majidbahmani.cesto.feature.onboarding.presentation.viewmodel.Onboardi
 import com.majidbahmani.cesto.feature.onboarding.presentation.viewmodel.OnboardingUiState.Status
 import com.majidbahmani.cesto.feature.onboarding.presentation.viewmodel.OnboardingViewModel
 import com.majidbahmani.cesto.feature.onboarding.resources.Res
+import com.majidbahmani.cesto.feature.onboarding.resources.cesto_logo
 import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_connect
-import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_connect_hint
 import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_continue_google
-import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_continue_google_hint
-import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_description
 import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_error_failed
 import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_error_no_google_account
 import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_error_permission_denied
 import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_error_sign_in_rejected
-import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_never_change
-import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_never_title
-import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_never_upload
-import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_reads_local
-import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_reads_receipts
-import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_reads_title
-import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_tagline
 import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_title
-import com.majidbahmani.cesto.feature.onboarding.resources.onboarding_try_demo
 import com.majidbahmani.cesto.systemdesign.theme.CestoTheme
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-internal fun OnboardingRoute(onConnect: () -> Unit, onTryDemo: () -> Unit, viewModel: OnboardingViewModel = koinViewModel()) {
+internal fun OnboardingRoute(onConnect: () -> Unit, viewModel: OnboardingViewModel = koinViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentOnConnect by rememberUpdatedState(onConnect)
 
@@ -69,15 +57,11 @@ internal fun OnboardingRoute(onConnect: () -> Unit, onTryDemo: () -> Unit, viewM
         if (uiState.status == Status.CONNECTED) currentOnConnect()
     }
 
-    OnboardingScreen(
-        uiState = uiState,
-        onContinue = viewModel::onContinue,
-        onTryDemo = onTryDemo
-    )
+    OnboardingScreen(uiState = uiState, onContinue = viewModel::onContinue)
 }
 
 @Composable
-internal fun OnboardingScreen(uiState: OnboardingUiState, onContinue: () -> Unit, onTryDemo: () -> Unit, modifier: Modifier = Modifier) {
+internal fun OnboardingScreen(uiState: OnboardingUiState, onContinue: () -> Unit, modifier: Modifier = Modifier) {
     Surface(modifier = modifier.fillMaxSize()) {
         when (uiState.status) {
             // Nothing to decide yet; also shown for the moment before navigating on.
@@ -89,103 +73,52 @@ internal fun OnboardingScreen(uiState: OnboardingUiState, onContinue: () -> Unit
                 isBusy = uiState.status != Status.READY,
                 signedIn = uiState.signedIn,
                 error = uiState.error,
-                onContinue = onContinue,
-                onTryDemo = onTryDemo
+                onContinue = onContinue
             )
         }
     }
 }
 
+/** One card in the middle: logo, name and the button. What Cesto may read is shown by Google's own consent dialog. */
 @Composable
-private fun IntroContent(isBusy: Boolean, signedIn: Boolean, error: ErrorReason?, onContinue: () -> Unit, onTryDemo: () -> Unit) {
+private fun IntroContent(isBusy: Boolean, signedIn: Boolean, error: ErrorReason?, onContinue: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing)
-            .verticalScroll(rememberScrollState()),
-        contentAlignment = Alignment.TopCenter
+            .verticalScroll(rememberScrollState()) // small screens, large fonts, a long error message
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Column(
-            modifier = Modifier.widthIn(max = 480.dp).padding(horizontal = 24.dp, vertical = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            shape = MaterialTheme.shapes.extraLarge,
+            modifier = Modifier.widthIn(max = 400.dp).fillMaxWidth()
         ) {
-            Text(
-                text = stringResource(Res.string.onboarding_title),
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(text = stringResource(Res.string.onboarding_tagline), style = MaterialTheme.typography.headlineSmall)
-            Text(
-                text = stringResource(Res.string.onboarding_description),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            PrivacyCard(
-                title = stringResource(Res.string.onboarding_reads_title),
-                items = listOf(
-                    stringResource(Res.string.onboarding_reads_receipts),
-                    stringResource(Res.string.onboarding_reads_local)
-                ),
-                mark = "✓",
-                markColor = MaterialTheme.colorScheme.primary
-            )
-            PrivacyCard(
-                title = stringResource(Res.string.onboarding_never_title),
-                items = listOf(
-                    stringResource(Res.string.onboarding_never_change),
-                    stringResource(Res.string.onboarding_never_upload)
-                ),
-                mark = "✕",
-                markColor = MaterialTheme.colorScheme.error
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            if (error != null) ErrorMessage(error)
-
-            Button(
-                onClick = onContinue,
-                enabled = !isBusy,
-                modifier = Modifier.fillMaxWidth().height(52.dp)
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (isBusy) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                } else {
-                    Text(stringResource(if (signedIn) Res.string.onboarding_connect else Res.string.onboarding_continue_google))
-                }
-            }
-            Text(
-                text = stringResource(if (signedIn) Res.string.onboarding_connect_hint else Res.string.onboarding_continue_google_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
-            OutlinedButton(
-                onClick = onTryDemo,
-                enabled = !isBusy,
-                modifier = Modifier.fillMaxWidth().height(52.dp)
-            ) {
-                Text(stringResource(Res.string.onboarding_try_demo))
-            }
-        }
-    }
-}
-
-@Composable
-private fun PrivacyCard(title: String, items: List<String>, mark: String, markColor: Color) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        shape = MaterialTheme.shapes.large,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium)
-            items.forEach { item ->
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(text = mark, color = markColor, fontWeight = FontWeight.Bold)
-                    Text(text = item, style = MaterialTheme.typography.bodyMedium)
+                // The app icon's drawing; the name below says it, so no description for screen readers.
+                Image(painter = painterResource(Res.drawable.cesto_logo), contentDescription = null, modifier = Modifier.size(96.dp))
+                Text(
+                    text = stringResource(Res.string.onboarding_title),
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                if (error != null) ErrorMessage(error)
+                Button(
+                    onClick = onContinue,
+                    enabled = !isBusy,
+                    modifier = Modifier.fillMaxWidth().height(52.dp)
+                ) {
+                    if (isBusy) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text(stringResource(if (signedIn) Res.string.onboarding_connect else Res.string.onboarding_continue_google))
+                    }
                 }
             }
         }
@@ -214,7 +147,7 @@ private fun ErrorMessage(error: ErrorReason) {
 @Composable
 private fun OnboardingScreenPreview() {
     CestoTheme {
-        OnboardingScreen(uiState = OnboardingUiState(status = Status.READY), onContinue = {}, onTryDemo = {})
+        OnboardingScreen(uiState = OnboardingUiState(status = Status.READY), onContinue = {})
     }
 }
 
@@ -224,8 +157,7 @@ private fun OnboardingScreenErrorDarkPreview() {
     CestoTheme(darkTheme = true) {
         OnboardingScreen(
             uiState = OnboardingUiState(status = Status.READY, signedIn = true, error = ErrorReason.PERMISSION_DENIED),
-            onContinue = {},
-            onTryDemo = {}
+            onContinue = {}
         )
     }
 }
