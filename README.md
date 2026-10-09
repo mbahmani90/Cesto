@@ -76,9 +76,38 @@ Every morning around 09:00: *"Yesterday you spent 23,45 € (3 receipts)"*.
 
 The sum is a shared use case, so iOS can reuse it later (`BGAppRefreshTask` + a local notification).
 
+### Accounts and sign-in (planned)
+
+Sign in with Google through **Google Cloud Identity Platform**, so one phone can hold several accounts and,
+later, buy Gemini credit.
+
+```
+Sign in ─► Google ID token (Android Credential Manager · iOS GoogleSignIn, audience = Web client ID)
+             └─► accounts:signInWithIdp ─► Identity Platform user (localId) + idToken (1 h) + refreshToken
+Connect Gmail ─► GmailAuthorizer for that account (as today) ─► Gmail token stays on the phone
+API calls     ─► validIdToken(): refreshed through securetoken.googleapis.com when it expires
+```
+
+1. **`:account` data layer.** `IdentityPlatformApi` (Ktor: `signInWithIdp`, token refresh), a
+   `SessionStore` with every signed-in account and the active one (refresh tokens encrypted: Android
+   Keystore / iOS Keychain), and `AccountRepository` (`signIn`, `accounts`, `activeAccount`, `switchTo`,
+   `validIdToken`, `signOut`).
+2. **Platform sign-in.** Android Credential Manager ("Sign in with Google") and iOS GoogleSignIn return the
+   Google ID token; Gmail permission stays a second step (Google skips the account picker the second time).
+3. **One database per account.** `cesto-<localId>.db`, so receipts never mix; an account switcher in Settings;
+   background work runs for the active account.
+4. **Gemini credit (later, separate).** A backend (Cloud Run) verifies the `idToken`, checks Play Billing /
+   StoreKit purchases, keeps a credit ledger per `localId` and calls Gemini with its own key. App Check
+   (Play Integrity / App Attest) protects it. Your own key stays as a free option.
+
+The Identity Platform API key isn't a secret (it ships in every app); it's restricted to the Identity
+Toolkit and Token Service APIs, and real protection comes from Google ID tokens accepted only from our own
+OAuth clients, and later App Check.
+
 ### Privacy first
 
-- Receipts, PDFs and the database stay **on the phone**. There is no app account and no backend login.
+- Receipts, PDFs and the database stay **on the phone**. The account (Identity Platform) only knows your
+  Google identity, never receipts or Gmail tokens.
 - The Gmail token never leaves the device; the app never sends, deletes or changes emails.
 - The LLM never sees the database or raw emails, only small tool results.
 - Gemini runs with **your own API key** (Settings): it's stored encrypted on the phone (Android Keystore) and
@@ -104,6 +133,7 @@ module; everything else only knows what it needs.
 | [`:systemdesign`](systemdesign/src) | `CestoTheme`: light and dark colour schemes; components used by 2+ features (`CestoScreenTitle`) |
 | [`:core`](core/src) | Non-UI shared code: the Ktor `HttpClient` (OkHttp / Darwin engine) and its Koin module |
 | [`:llm`](llm/src) | Gemini with the user's own key: encrypted key storage (Android Keystore), the Gemini REST client (key check, structured output, function calling) and `EmbeddingProvider` (Gemini embeddings) |
+| [`:account`](account/src) | Cesto accounts (Identity Platform): the REST client (`signInWithIdp`, token refresh), every signed-in account with encrypted refresh tokens (Android Keystore), `AccountRepository`; not wired into the app yet |
 | [`:database`](database/src) | Local SQLite database (SQLDelight): receipts, products, receipt lines, product vectors and the Gmail messages already checked; receipts fills it, the chat's read-only queries (`Insights.sq`) use it |
 
 ### Rules
@@ -189,6 +219,13 @@ The app needs OAuth clients in a Google Cloud project:
      `iosApp/Configuration/Secrets.xcconfig.example` to `Secrets.xcconfig` (gitignored) and fill in the
      client ID and its reversed form.
 
+4. **Sign-in (Identity Platform, planned):** enable Identity Platform, add the **Google** provider with a
+   **Web application** OAuth client's ID and secret (no redirect URI needed), and add the Android and iOS
+   client IDs under **Allowed client IDs**. Check that the auto-created **Browser key** allows the
+   **Identity Toolkit API** and **Token Service API**, then copy it to `local.properties`
+   (`IDENTITY_PLATFORM_API_KEY=...`) and `Secrets.xcconfig` (`IDENTITY_PLATFORM_API_KEY = ...`).
+   Before a Play release: add the Play App Signing SHA-1 to the Android client and restrict the key.
+
 Without these the app still builds and runs; "Connect Gmail" then shows an error and **Try demo** works.
 
 ### Run
@@ -245,6 +282,7 @@ git push origin v1.0.0
 |---|---|
 | Data on the device, not in the cloud | Receipts contain the NIF and shopping habits; Gmail is the source of truth, so nothing needs a backup; keeping restricted-scope Gmail data off servers avoids Google's security assessment |
 | No Cognito / app accounts | The Gmail token would end up on a server, and Cognito can't refresh Google tokens. One Google dialog is all the user sees |
+| Identity Platform accounts (planned) | Several accounts on one phone and paid Gemini credit need a stable user id a backend can verify; Google sign-in only, and the Gmail token still never leaves the phone |
 | Your own Gemini key, no backend | A key inside the app could be extracted and used on someone else's bill; with each user's own key (set up in two steps in Settings, tested before saving) no proxy or server is needed, and costs stay on the user's account. Billing is recommended: on the free tier Google may use prompts to improve its products |
 | Extract once, then query with tools | Sending all receipt text per question is expensive and LLMs make arithmetic mistakes; SQL computes exact sums and scales to 10,000+ items |
 | `:gmail-auth` as its own leaf module | Onboarding and receipts both need it, and features don't depend on each other |
@@ -268,6 +306,7 @@ git push origin v1.0.0
   Open Food Facts (sugar, ingredients, category) · demo mode with sample receipts ·
   daily notification with yesterday's spending (WorkManager)
 - **v2: RAG.** ~~Gemini embeddings + `semanticSearch` tool ("dairy" finds *IOG GREGO NAT*)~~ ✅ · nutrition guidelines
+- **Accounts.** Identity Platform sign-in (`:account`) · one database per account + switcher · Gemini credit (backend, Play Billing, App Check)
 - **v3: on device.** On-device embedding model (EmbeddingGemma), evaluation set, optional offline LLM, more stores
 
 Receipts show what you **bought**, not what you ate: the app talks about "sugar in groceries purchased".
