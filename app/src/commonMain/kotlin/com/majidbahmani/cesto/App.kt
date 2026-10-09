@@ -84,7 +84,15 @@ fun App(modifier: Modifier = Modifier) {
                 )
                 chatScreen(onOpenSettings = { navController.navigateToTab(TopLevelDestination.SETTINGS) }, contentPadding = contentPadding)
                 receiptsScreen(contentPadding)
-                settingsScreen(contentPadding)
+                settingsScreen(
+                    // Signed out: back to onboarding, with nothing behind it.
+                    onSignedOut = {
+                        navController.navigate(OnboardingRoute) {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                        }
+                    },
+                    contentPadding = contentPadding
+                )
             }
         }
     }

@@ -20,6 +20,8 @@ class SignInRepositoryImplTest {
     private class FakeProvider(private val error: GoogleSignInError? = null) : GoogleIdTokenProvider {
         override fun signIn(onSuccess: (String) -> Unit, onFailure: (GoogleSignInError) -> Unit) =
             if (error == null) onSuccess("google-token") else onFailure(error)
+
+        override fun signOut() = Unit
     }
 
     private class FakeAccounts(private val failure: Exception? = null) : AccountRepository {

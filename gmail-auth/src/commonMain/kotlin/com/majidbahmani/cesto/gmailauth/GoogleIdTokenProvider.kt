@@ -26,6 +26,9 @@ enum class GoogleSignInError {
  */
 interface GoogleIdTokenProvider {
     fun signIn(onSuccess: (idToken: String) -> Unit, onFailure: (GoogleSignInError) -> Unit)
+
+    /** Forgets the Google sign-in state kept by the SDK, so the next [signIn] starts fresh. Never shows UI. */
+    fun signOut()
 }
 
 sealed interface GoogleIdToken {

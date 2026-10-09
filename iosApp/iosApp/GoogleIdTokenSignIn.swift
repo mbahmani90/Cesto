@@ -29,6 +29,11 @@ final class GoogleIdTokenSignIn: GoogleIdTokenProvider {
         }
     }
 
+    /// Also ends GoogleGmailAuthorizer's session: it uses the same Google user.
+    func signOut() {
+        GIDSignIn.sharedInstance.signOut()
+    }
+
     private static func topViewController() -> UIViewController? {
         let window = UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }

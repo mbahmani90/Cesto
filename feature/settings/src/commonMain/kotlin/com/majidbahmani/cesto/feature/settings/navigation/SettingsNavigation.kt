@@ -9,7 +9,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 data object SettingsRoute
 
-/** The feature's only entry point; :app puts it in the bottom bar. [contentPadding]: space the bar covers. */
-fun NavGraphBuilder.settingsScreen(contentPadding: PaddingValues = PaddingValues()) {
-    composable<SettingsRoute> { SettingsRouteContent(contentPadding = contentPadding) }
+/**
+ * The feature's only entry point; :app puts it in the bottom bar. [contentPadding]: space the bar covers.
+ * [onSignedOut]: no account is signed in any more (after "Sign out"); :app decides where to go.
+ */
+fun NavGraphBuilder.settingsScreen(onSignedOut: () -> Unit, contentPadding: PaddingValues = PaddingValues()) {
+    composable<SettingsRoute> { SettingsRouteContent(onSignedOut = onSignedOut, contentPadding = contentPadding) }
 }

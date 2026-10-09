@@ -24,13 +24,18 @@ kotlin {
         androidResources {
             enable = true
         }
-        withHostTest {}
+        withHostTest {
+            isReturnDefaultValues = true // logWarning uses android.util.Log
+        }
     }
 
     sourceSets {
         commonMain.dependencies {
             implementation(project(":systemdesign"))
             implementation(project(":llm"))
+            implementation(project(":account"))
+            implementation(project(":gmail-auth"))
+            implementation(project(":core"))
             implementation(libs.koin.core)
             implementation(libs.koin.compose.viewmodel)
             implementation(libs.androidx.lifecycle.viewmodelCompose)

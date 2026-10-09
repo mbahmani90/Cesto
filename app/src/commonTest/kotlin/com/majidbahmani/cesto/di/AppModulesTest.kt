@@ -44,6 +44,8 @@ class AppModulesTest {
 
     private object FakeGoogleIdTokenProvider : GoogleIdTokenProvider {
         override fun signIn(onSuccess: (String) -> Unit, onFailure: (GoogleSignInError) -> Unit) = onFailure(GoogleSignInError.CANCELLED)
+
+        override fun signOut() = Unit
     }
 
     private object UnusedSessionStore : SessionStore {
