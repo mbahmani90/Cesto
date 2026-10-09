@@ -122,18 +122,18 @@ module; everything else only knows what it needs.
 
 | Module | Contains |
 |---|---|
-| [`androidApp`](androidApp) | Android entry point: `CestoApp` starts Koin, `MainActivity`, and `AndroidGmailAuthorizer` (Google Identity `AuthorizationClient`) |
-| [`iosApp`](iosApp) | iOS entry point (SwiftUI) and `GoogleGmailAuthorizer` (GoogleSignIn, Swift Package) |
+| [`androidApp`](androidApp) | Android entry point: `CestoApp` starts Koin, `MainActivity`, `AndroidGmailAuthorizer` (Google Identity `AuthorizationClient`) and `AndroidGoogleIdTokenProvider` (Credential Manager) |
+| [`iosApp`](iosApp) | iOS entry point (SwiftUI), `GoogleGmailAuthorizer` and `GoogleIdTokenSignIn` (GoogleSignIn, Swift Package) |
 | [`:app`](app/src) | Composition root: `App()` with `CestoTheme`, the bottom bar (**Ask · Receipts · Settings**) and the `NavHost`, `initKoin()` with all Koin modules; builds the iOS framework `Shared` |
 | [`:feature:onboarding`](feature/onboarding/src) | First screen: what Cesto reads and never does, **Connect Gmail**, **Try demo** |
 | [`:feature:receipts`](feature/receipts/src) | Receipt sync (Gmail REST with Ktor → database → PDF files), item extraction with Gemini, and the receipt list with pull to refresh |
 | [`:feature:chat`](feature/chat/src) | **Ask** tab: the agent loop (`AskQuestionUseCase`), Gemini function calling, the SQL tools and the chat screen |
 | [`:feature:settings`](feature/settings/src) | **Settings** tab: your own Gemini key in two steps, tested before saving, and an **Enable billing** link; later Gmail and privacy |
-| [`:gmail-auth`](gmail-auth/src) | `GmailAuthorizer`: the Gmail permission interface the platform apps implement |
+| [`:gmail-auth`](gmail-auth/src) | The Google SDK interfaces the platform apps implement: `GmailAuthorizer` (Gmail permission) and `GoogleIdTokenProvider` (Sign in with Google) |
 | [`:systemdesign`](systemdesign/src) | `CestoTheme`: light and dark colour schemes; components used by 2+ features (`CestoScreenTitle`) |
 | [`:core`](core/src) | Non-UI shared code: the Ktor `HttpClient` (OkHttp / Darwin engine) and its Koin module |
 | [`:llm`](llm/src) | Gemini with the user's own key: encrypted key storage (Android Keystore), the Gemini REST client (key check, structured output, function calling) and `EmbeddingProvider` (Gemini embeddings) |
-| [`:account`](account/src) | Cesto accounts (Identity Platform): the REST client (`signInWithIdp`, token refresh), every signed-in account with encrypted refresh tokens (Android Keystore), `AccountRepository`; not wired into the app yet |
+| [`:account`](account/src) | Cesto accounts (Identity Platform): the REST client (`signInWithIdp`, token refresh), every signed-in account with encrypted refresh tokens (Android Keystore), `AccountRepository`; in Koin, not used by a screen yet |
 | [`:database`](database/src) | Local SQLite database (SQLDelight): receipts, products, receipt lines, product vectors and the Gmail messages already checked; receipts fills it, the chat's read-only queries (`Insights.sq`) use it |
 
 ### Rules
@@ -187,6 +187,7 @@ extraction until the next sync.
 | DI | Koin 4.2 (`koin-compose-viewmodel`) |
 | Network | Ktor 3.6 (OkHttp on Android, Darwin on iOS), kotlinx.serialization |
 | Gmail permission | Google Identity `AuthorizationClient` (play-services-auth 22) · GoogleSignIn-iOS 10 |
+| Sign-in | Credential Manager 1.6 + googleid 1.2 (Sign in with Google) · GoogleSignIn-iOS · Identity Platform REST via Ktor |
 | Database | SQLDelight 2.4 (Android driver, iOS native driver with the system SQLite), migrations in `.sqm` files |
 | PDF text | PdfBox-Android 2.0.27 · PDFKit (iOS, called from Kotlin/Native) |
 | Dates | kotlinx-datetime 0.8 |
@@ -222,8 +223,10 @@ The app needs OAuth clients in a Google Cloud project:
 4. **Sign-in (Identity Platform, planned):** enable Identity Platform, add the **Google** provider with a
    **Web application** OAuth client's ID and secret (no redirect URI needed), and add the Android and iOS
    client IDs under **Allowed client IDs**. Check that the auto-created **Browser key** allows the
-   **Identity Toolkit API** and **Token Service API**, then copy it to `local.properties`
-   (`IDENTITY_PLATFORM_API_KEY=...`) and `Secrets.xcconfig` (`IDENTITY_PLATFORM_API_KEY = ...`).
+   **Identity Toolkit API** and **Token Service API**. Then fill in, both gitignored:
+   - `local.properties`: `IDENTITY_PLATFORM_API_KEY=...` and `GOOGLE_WEB_CLIENT_ID=...` (the Web client's ID,
+     the audience of Android's Google ID token). CI reads the same names from environment variables.
+   - `Secrets.xcconfig`: `IDENTITY_PLATFORM_API_KEY = ...` (iOS uses its own iOS client ID).
    Before a Play release: add the Play App Signing SHA-1 to the Android client and restrict the key.
 
 Without these the app still builds and runs; "Connect Gmail" then shows an error and **Try demo** works.

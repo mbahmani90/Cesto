@@ -1,5 +1,7 @@
 package com.majidbahmani.cesto.di
 
+import com.majidbahmani.cesto.account.di.IdentityPlatformConfig
+import com.majidbahmani.cesto.account.di.accountModule
 import com.majidbahmani.cesto.core.di.dispatchersModule
 import com.majidbahmani.cesto.core.di.networkModule
 import com.majidbahmani.cesto.database.di.databaseModule
@@ -8,6 +10,7 @@ import com.majidbahmani.cesto.feature.onboarding.di.onboardingModule
 import com.majidbahmani.cesto.feature.receipts.di.receiptsModule
 import com.majidbahmani.cesto.feature.settings.di.settingsModule
 import com.majidbahmani.cesto.gmailauth.GmailAuthorizer
+import com.majidbahmani.cesto.gmailauth.GoogleIdTokenProvider
 import com.majidbahmani.cesto.llm.di.llmModule
 import org.koin.core.KoinApplication
 import org.koin.core.context.startKoin
@@ -21,19 +24,29 @@ internal val appModules = listOf(
     dispatchersModule,
     databaseModule,
     llmModule,
+    accountModule,
     onboardingModule,
     receiptsModule,
     settingsModule,
     chatModule
 )
 
-/** Bindings created by the platform apps before Koin starts (they need the platform SDKs). */
-internal fun platformServicesModule(gmailAuthorizer: GmailAuthorizer): Module = module {
-    single<GmailAuthorizer> { gmailAuthorizer }
+/** What the platform apps create before Koin starts: Google SDKs, and build config (the API key). */
+class PlatformServices(
+    val gmailAuthorizer: GmailAuthorizer,
+    val googleIdTokenProvider: GoogleIdTokenProvider,
+    /** From local.properties / Secrets.xcconfig; empty when not set up (sign-in then fails, the app still runs). */
+    val identityPlatformApiKey: String
+)
+
+internal fun platformServicesModule(services: PlatformServices): Module = module {
+    single<GmailAuthorizer> { services.gmailAuthorizer }
+    single<GoogleIdTokenProvider> { services.googleIdTokenProvider }
+    single { IdentityPlatformConfig(apiKey = services.identityPlatformApiKey) }
 }
 
 /** Starts Koin once per process: from the Android Application and the iOS App init. */
-fun initKoin(gmailAuthorizer: GmailAuthorizer, appDeclaration: KoinAppDeclaration = {}): KoinApplication = startKoin {
+fun initKoin(services: PlatformServices, appDeclaration: KoinAppDeclaration = {}): KoinApplication = startKoin {
     appDeclaration()
-    modules(listOf(platformServicesModule(gmailAuthorizer)) + appModules)
+    modules(listOf(platformServicesModule(services)) + appModules)
 }

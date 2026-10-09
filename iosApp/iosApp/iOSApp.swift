@@ -5,7 +5,13 @@ import Shared
 @main
 struct iOSApp: App {
     init() {
-        KoinIosKt.doInitKoinIos(gmailAuthorizer: GoogleGmailAuthorizer())
+        // From Secrets.xcconfig through Info.plist; empty when not set up (sign-in then fails, the app still runs).
+        let apiKey = Bundle.main.object(forInfoDictionaryKey: "IdentityPlatformApiKey") as? String ?? ""
+        KoinIosKt.doInitKoinIos(
+            gmailAuthorizer: GoogleGmailAuthorizer(),
+            googleIdTokenProvider: GoogleIdTokenSignIn(),
+            identityPlatformApiKey: apiKey
+        )
     }
 
     var body: some Scene {

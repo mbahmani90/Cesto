@@ -15,7 +15,7 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "Shared"
             isStatic = true
-            // Swift implements GmailAuthorizer, so it must see the type under a clean name.
+            // Swift implements GmailAuthorizer and GoogleIdTokenProvider, so it must see them under clean names.
             export(project(":gmail-auth"))
         }
         // SQLDelight's native driver uses the system SQLite. Needed by the test binary; the static
@@ -57,6 +57,7 @@ kotlin {
             implementation(project(":feature:chat"))
             implementation(project(":feature:settings"))
             implementation(project(":llm"))
+            implementation(project(":account"))
             implementation(libs.compose.components.resources)
             implementation(project(":database"))
             // api: androidApp and iosApp implement GmailAuthorizer and pass it to initKoin().

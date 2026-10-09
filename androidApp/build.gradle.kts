@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -17,10 +18,21 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.workmanager)
     implementation(libs.play.services.auth)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.playServicesAuth)
+    implementation(libs.googleid)
 
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)
 }
+
+// Google sign-in config: local.properties (gitignored) on a dev machine, environment variables on CI.
+// Missing → empty: the app still builds and runs, sign-in just fails. Not secrets (they ship in the APK).
+val localProperties = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+}
+
+fun googleConfig(name: String): String = localProperties.getProperty(name) ?: System.getenv(name) ?: ""
 
 android {
     namespace = "com.majidbahmani.cesto"
@@ -32,6 +44,8 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        buildConfigField("String", "IDENTITY_PLATFORM_API_KEY", "\"${googleConfig("IDENTITY_PLATFORM_API_KEY")}\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${googleConfig("GOOGLE_WEB_CLIENT_ID")}\"")
     }
     packaging {
         resources {
@@ -65,6 +79,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     lint {
         // Also lint the KMP modules (:app, features, :core…): they have no lint task of their own.
