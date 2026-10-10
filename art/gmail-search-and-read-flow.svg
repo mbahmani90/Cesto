@@ -1,0 +1,175 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="690" viewBox="0 0 1000 690" role="img" aria-labelledby="title desc">
+  <title id="title">Cesto Gmail sync: search and read</title>
+  <desc id="desc">The first two Gmail steps of ReceiptRepositoryImpl.sync. Step 1, once per sync: messages.list searches for Continente receipt emails, follows nextPageToken for up to 10 pages, then drops ids already in gmail_message. Step 2, once per new email with up to 4 at a time: messages.get with format=full, pdfAttachments finds the PDF parts, receivedAtMillis reads internalDate, and saveCheckedMessage saves one FOUND receipt per PDF and marks the email checked.</desc>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; fill: #1c1c1c; }
+    .bg { fill: #ffffff; }
+    .band { fill: #f7f7f7; stroke: #e2e2e2; }
+    .band-label { font-size: 11.5px; font-weight: 700; fill: #4a4a4a; letter-spacing: 0.08em; }
+    .h { font-size: 14px; font-weight: 700; }
+    .t { font-size: 11.5px; fill: #4a4a4a; }
+    .code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 10px; fill: #1e7a4f; white-space: pre; }
+    .note { font-size: 11.5px; fill: #4a4a4a; font-style: italic; }
+    .warn { font-size: 11.5px; fill: #a33a2a; }
+    .gmail { fill: #ffffff; stroke: #1e7a4f; stroke-width: 1.4; }
+    .phone { fill: #f2f2f2; stroke: #cacaca; }
+    .db { fill: #cdefd9; stroke: #8fcfa9; }
+    .dep { fill: none; stroke: #7a7a7a; stroke-width: 1.5; }
+    .loop { fill: none; stroke: #1e7a4f; stroke-width: 1.5; stroke-dasharray: 6 5; }
+    .tip { fill: #7a7a7a; }
+    .tip-loop { fill: #1e7a4f; }
+    .step { fill: #1e7a4f; }
+    .step-text { font-size: 11px; font-weight: 700; fill: #ffffff; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path class="tip" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+    <marker id="arrow-loop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path class="tip-loop" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1000" height="690"/>
+
+  <!-- ===================== Step 1: search ===================== -->
+  <rect class="band" x="10" y="10" width="980" height="290" rx="10"/>
+  <text class="band-label" x="24" y="32">1 · SEARCH — messages.list (once per sync)</text>
+
+  <!-- arrows -->
+  <path class="dep" d="M234,130 L262,130" marker-end="url(#arrow)"/>
+  <path class="dep" d="M478,130 L506,130" marker-end="url(#arrow)"/>
+  <path class="dep" d="M722,130 L750,130" marker-end="url(#arrow)"/>
+  <!-- pagination loop: step 3 back to step 1 -->
+  <path class="loop" d="M615,210 L615,236 L127,236 L127,212" marker-end="url(#arrow-loop)"/>
+  <text class="t" x="371" y="254" text-anchor="middle">has nextPageToken → request the next page</text>
+
+  <!-- 1.1 send the search -->
+  <g transform="translate(20,50)">
+    <rect class="gmail" width="214" height="160" rx="10"/>
+    <circle class="step" cx="20" cy="22" r="11"/><text class="step-text" x="20" y="26" text-anchor="middle">1</text>
+    <text class="h" x="38" y="27">Send the search</text>
+    <text class="code" x="14" y="54">GET messages</text>
+    <text class="code" x="14" y="71">q = from:noreply@</text>
+    <text class="code" x="14" y="86">    cartaocontinente.pt</text>
+    <text class="code" x="14" y="101">    has:attachment filename:pdf</text>
+    <text class="code" x="14" y="116">    newer_than:3m</text>
+    <text class="code" x="14" y="133">maxResults = 100</text>
+  </g>
+
+  <!-- 1.2 Gmail returns a page -->
+  <g transform="translate(264,50)">
+    <rect class="gmail" width="214" height="160" rx="10"/>
+    <circle class="step" cx="20" cy="22" r="11"/><text class="step-text" x="20" y="26" text-anchor="middle">2</text>
+    <text class="h" x="38" y="27">Gmail returns a page</text>
+    <text class="t" x="14" y="56">Up to 100 message ids</text>
+    <text class="t" x="14" y="73">+ nextPageToken if there</text>
+    <text class="t" x="14" y="90">are more results</text>
+    <text class="note" x="14" y="117">Ids only: no headers,</text>
+    <text class="note" x="14" y="134">no attachments. Cheap.</text>
+  </g>
+
+  <!-- 1.3 next page -->
+  <g transform="translate(508,50)">
+    <rect class="gmail" width="214" height="160" rx="10"/>
+    <circle class="step" cx="20" cy="22" r="11"/><text class="step-text" x="20" y="26" text-anchor="middle">3</text>
+    <text class="h" x="38" y="27">Next page?</text>
+    <text class="t" x="14" y="56">Token → send step 1 again</text>
+    <text class="t" x="14" y="73">with pageToken</text>
+    <text class="t" x="14" y="100">No token → go to step 4</text>
+    <text class="t" x="14" y="127">At most 10 pages</text>
+    <text class="t" x="14" y="144">(1,000 ids)</text>
+  </g>
+
+  <!-- 1.4 drop known emails -->
+  <g transform="translate(752,50)">
+    <rect class="db" width="214" height="160" rx="10"/>
+    <circle class="step" cx="20" cy="22" r="11"/><text class="step-text" x="20" y="26" text-anchor="middle">4</text>
+    <text class="h" x="38" y="27">Drop known emails</text>
+    <text class="code" x="14" y="54">filterNot {</text>
+    <text class="code" x="14" y="69">  local.isChecked(it)</text>
+    <text class="code" x="14" y="84">}</text>
+    <text class="t" x="14" y="108">Id already in gmail_message</text>
+    <text class="t" x="14" y="125">→ skipped</text>
+    <text class="t" x="14" y="146">Result: newIds</text>
+  </g>
+
+  <text class="t" x="24" y="280">allMatchingMessageIds · ReceiptRepositoryImpl.kt:104</text>
+  <text class="warn" x="340" y="280">If this step fails, the whole sync fails.</text>
+
+  <!-- newIds flow into step 2 -->
+  <path class="dep" d="M859,210 L859,320 L127,320 L127,378" marker-end="url(#arrow)"/>
+  <text class="t" x="867" y="262">newIds</text>
+
+  <!-- ===================== Step 2: read each new email ===================== -->
+  <rect class="band" x="10" y="340" width="980" height="290" rx="10"/>
+  <text class="band-label" x="140" y="362">2 · READ EACH NEW EMAIL — messages.get (once per new email, up to 4 at a time)</text>
+
+  <!-- arrows -->
+  <path class="dep" d="M234,460 L262,460" marker-end="url(#arrow)"/>
+  <path class="dep" d="M478,460 L506,460" marker-end="url(#arrow)"/>
+  <path class="dep" d="M722,460 L750,460" marker-end="url(#arrow)"/>
+
+  <!-- 2.1 read the email -->
+  <g transform="translate(20,380)">
+    <rect class="gmail" width="214" height="160" rx="10"/>
+    <circle class="step" cx="20" cy="22" r="11"/><text class="step-text" x="20" y="26" text-anchor="middle">1</text>
+    <text class="h" x="38" y="27">Read the email</text>
+    <text class="code" x="14" y="54">GET messages/{id}</text>
+    <text class="code" x="14" y="69">    ?format=full</text>
+    <text class="t" x="14" y="93">Headers, internalDate,</text>
+    <text class="t" x="14" y="110">MIME part tree with</text>
+    <text class="t" x="14" y="127">attachment ids</text>
+    <text class="note" x="14" y="147">No PDF bytes yet</text>
+  </g>
+
+  <!-- 2.2 find the PDF parts -->
+  <g transform="translate(264,380)">
+    <rect class="phone" width="214" height="160" rx="10"/>
+    <circle class="step" cx="20" cy="22" r="11"/><text class="step-text" x="20" y="26" text-anchor="middle">2</text>
+    <text class="h" x="38" y="27">Find the PDF parts</text>
+    <text class="code" x="14" y="54">pdfAttachments()</text>
+    <text class="t" x="14" y="76">Walks the nested parts;</text>
+    <text class="t" x="14" y="93">keeps application/pdf</text>
+    <text class="t" x="14" y="110">or a *.pdf file name</text>
+    <text class="code" x="14" y="133">→ partId, attachmentId,</text>
+    <text class="code" x="14" y="148">  fileName, size</text>
+  </g>
+
+  <!-- 2.3 received date -->
+  <g transform="translate(508,380)">
+    <rect class="phone" width="214" height="160" rx="10"/>
+    <circle class="step" cx="20" cy="22" r="11"/><text class="step-text" x="20" y="26" text-anchor="middle">3</text>
+    <text class="h" x="38" y="27">Received date</text>
+    <text class="code" x="14" y="54">receivedAtMillis()</text>
+    <text class="t" x="14" y="76">Reads Gmail's internalDate</text>
+    <text class="t" x="14" y="103">Missing or malformed →</text>
+    <text class="code" x="14" y="120">currentTimeMillis()</text>
+  </g>
+
+  <!-- 2.4 save -->
+  <g transform="translate(752,380)">
+    <rect class="db" width="214" height="160" rx="10"/>
+    <circle class="step" cx="20" cy="22" r="11"/><text class="step-text" x="20" y="26" text-anchor="middle">4</text>
+    <text class="h" x="38" y="27">Save to the database</text>
+    <text class="code" x="14" y="54">local.saveCheckedMessage()</text>
+    <text class="t" x="14" y="78">One FOUND receipt row</text>
+    <text class="t" x="14" y="95">per PDF</text>
+    <text class="t" x="14" y="119">Email id → gmail_message</text>
+    <text class="t" x="14" y="136">(marked checked)</text>
+  </g>
+
+  <text class="t" x="24" y="572">syncNewEmail · ReceiptRepositoryImpl.kt:116</text>
+  <text class="warn" x="24" y="592">A failure only affects this email: it isn't marked checked, so the next sync reads it again.</text>
+  <text class="note" x="24" y="612">Next: attachments.get downloads each FOUND receipt, using the attachmentId from this same response.</text>
+
+  <!-- Legend -->
+  <rect class="gmail" x="24" y="652" width="18" height="14" rx="3"/>
+  <text class="t" x="50" y="663">Gmail request</text>
+  <rect class="phone" x="160" y="652" width="18" height="14" rx="3"/>
+  <text class="t" x="186" y="663">On the phone</text>
+  <rect class="db" x="290" y="652" width="18" height="14" rx="3"/>
+  <text class="t" x="316" y="663">Local database (cesto.db)</text>
+  <path class="loop" d="M490,659 L520,659" marker-end="url(#arrow-loop)"/>
+  <text class="t" x="530" y="663">Pagination loop</text>
+</svg>
