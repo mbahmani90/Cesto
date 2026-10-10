@@ -181,6 +181,15 @@ unique printed name a `product` (full Portuguese name, category, units per pack)
 against the receipt's subtotal. Gemini overloaded → retry, then a lighter model; key or quota errors pause
 extraction until the next sync.
 
+#### Gmail: search and read
+
+![Gmail sync: search with messages.list, then read each new email with messages.get](art/gmail-search-and-read-flow.svg)
+
+Each sync first searches Gmail for Continente receipt emails (ids only, page by page) and drops the ones
+already checked. Each new email is then read once, up to 4 at a time: its PDF parts are saved as `FOUND`
+receipts and the email is marked checked. The PDFs are downloaded next, with the attachment ids from that
+same response. Every Gmail request goes through `KtorGmailApi`.
+
 ## Tech stack
 
 | Area | Library |
