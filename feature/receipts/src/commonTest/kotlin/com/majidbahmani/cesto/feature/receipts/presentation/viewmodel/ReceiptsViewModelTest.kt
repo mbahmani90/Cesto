@@ -90,7 +90,7 @@ class ReceiptsViewModelTest {
         val viewModel = viewModel()
 
         repository.receipts.value = listOf(receipt(2), receipt(1))
-        repository.syncAnswer.complete(SyncResult.Success(newReceipts = 2, downloaded = 2))
+        repository.syncAnswer.complete(SyncResult.Success(downloaded = 2))
         runCurrent()
 
         assertEquals(listOf(2L, 1L), viewModel.uiState.value.receipts.map { it.id })
@@ -118,13 +118,13 @@ class ReceiptsViewModelTest {
     @Test
     fun partlyLoaded_showsHowManyAreMissing_completeShowsNothing() = runTest(dispatcher) {
         val viewModel = viewModel()
-        repository.syncAnswer.complete(SyncResult.Success(newReceipts = 5, downloaded = 3, incomplete = 2))
+        repository.syncAnswer.complete(SyncResult.Success(downloaded = 3, incomplete = 2))
         runCurrent()
         assertEquals(SyncProblem.Incomplete(2), viewModel.uiState.value.syncProblem)
 
         repository.syncAnswer = CompletableDeferred()
         viewModel.onRefresh()
-        repository.syncAnswer.complete(SyncResult.Success(newReceipts = 0, downloaded = 2))
+        repository.syncAnswer.complete(SyncResult.Success(downloaded = 2))
         runCurrent()
         assertEquals(null, viewModel.uiState.value.syncProblem)
     }

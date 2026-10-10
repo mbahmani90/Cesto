@@ -5,7 +5,7 @@ sealed interface SyncResult {
      * Gmail was searched. [incomplete] counts emails that couldn't be read and receipts that couldn't
      * be downloaded this time (network hiccups); they are retried by the next sync.
      */
-    data class Success(val newReceipts: Int, val downloaded: Int, val incomplete: Int = 0) : SyncResult
+    data class Success(val downloaded: Int, val incomplete: Int = 0) : SyncResult
 
     /** Gmail couldn't be searched at all. */
     data class Failure(val reason: SyncFailure) : SyncResult

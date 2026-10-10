@@ -61,15 +61,16 @@ class ReceiptRepositoryImplTest {
     private fun rows() = database.receiptQueries.selectAll().executeAsList()
 
     @Test
-    fun firstSync_savesAndDownloadsEveryPdf_readingEachEmailOnce() = runTest {
+    fun firstSync_savesAndDownloadsEveryPdf() = runTest {
         gmail.mailbox += Mail("m3", receivedAt = 3_000, pdfs = mapOf("1" to pdf("%PDF-3")))
         gmail.mailbox += Mail("m2", receivedAt = 2_000, pdfs = mapOf("1" to pdf("%PDF-2a"), "2" to pdf("%PDF-2b")))
         gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = emptyMap()) // matched the query, no PDF
 
         val result = repository().sync(lookBackMonths = 3)
 
-        assertEquals(SyncResult.Success(newReceipts = 3, downloaded = 3), result)
-        assertEquals(listOf("m1", "m2", "m3"), gmail.fetchedMessages.sorted()) // each email read once
+        assertEquals(SyncResult.Success(downloaded = 3), result)
+        // Read once to save the receipts, again for fresh attachment ids; m1 has no PDF to download.
+        assertEquals(listOf("m1", "m2", "m2", "m3", "m3"), gmail.fetchedMessages.sorted())
         assertTrue(rows().all { it.status == "TEXT_EXTRACTED" && it.pdf_path == "receipts/receipt-${it.id}.pdf" })
         assertEquals(setOf("%PDF-3", "%PDF-2a", "%PDF-2b"), files.files.values.map { it.decodeToString() }.toSet())
     }
@@ -88,7 +89,7 @@ class ReceiptRepositoryImplTest {
 
         val result = repository().sync(lookBackMonths = 3)
 
-        assertEquals(SyncResult.Success(newReceipts = 5, downloaded = 5), result)
+        assertEquals(SyncResult.Success(downloaded = 5), result)
         assertEquals(3, gmail.queries.size) // pages of 2: 2 + 2 + 1
     }
 
@@ -99,10 +100,10 @@ class ReceiptRepositoryImplTest {
 
         val result = repository(maxParallelEmails = 3).sync(lookBackMonths = 3)
 
-        assertEquals(SyncResult.Success(newReceipts = 10, downloaded = 10), result)
+        assertEquals(SyncResult.Success(downloaded = 10), result)
         assertEquals(3, gmail.maxInFlight)
-        // 10 emails × 2 requests × 100 ms in parallels of 3 instead of 2 000 ms one by one
-        assertTrue(testScheduler.currentTime <= 800, "took ${testScheduler.currentTime} ms")
+        // 10 emails × 3 requests × 100 ms in parallels of 3 instead of 3 000 ms one by one
+        assertTrue(testScheduler.currentTime <= 1_200, "took ${testScheduler.currentTime} ms")
     }
 
     @Test
@@ -115,8 +116,8 @@ class ReceiptRepositoryImplTest {
         gmail.mailbox.add(0, Mail("m2", receivedAt = 2_000, pdfs = mapOf("1" to pdf("%PDF-2"))))
         val result = repository.sync(lookBackMonths = 3)
 
-        assertEquals(SyncResult.Success(newReceipts = 1, downloaded = 1), result)
-        assertEquals(listOf("m2"), gmail.fetchedMessages)
+        assertEquals(SyncResult.Success(downloaded = 1), result)
+        assertEquals(listOf("m2", "m2"), gmail.fetchedMessages) // save, then download
         assertEquals(2, rows().size)
     }
 
@@ -125,7 +126,7 @@ class ReceiptRepositoryImplTest {
         gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = mapOf("1" to null))
         val repository = repository()
 
-        assertEquals(SyncResult.Success(newReceipts = 1, downloaded = 0), repository.sync(lookBackMonths = 3))
+        assertEquals(SyncResult.Success(downloaded = 0), repository.sync(lookBackMonths = 3))
         assertEquals("FAILED", rows().single().status)
 
         gmail.fetchedMessages.clear()
@@ -141,13 +142,13 @@ class ReceiptRepositoryImplTest {
         val repository = repository()
 
         gmail.failGetMessage = "m2"
-        assertEquals(SyncResult.Success(newReceipts = 2, downloaded = 2, incomplete = 1), repository.sync(lookBackMonths = 3))
+        assertEquals(SyncResult.Success(downloaded = 2, incomplete = 1), repository.sync(lookBackMonths = 3))
         assertEquals(setOf("m1", "m3"), rows().map { it.gmail_message_id }.toSet())
 
         gmail.failGetMessage = null
         gmail.fetchedMessages.clear()
-        assertEquals(SyncResult.Success(newReceipts = 1, downloaded = 1), repository.sync(lookBackMonths = 3))
-        assertEquals(listOf("m2"), gmail.fetchedMessages)
+        assertEquals(SyncResult.Success(downloaded = 1), repository.sync(lookBackMonths = 3))
+        assertEquals(listOf("m2", "m2"), gmail.fetchedMessages)
     }
 
     @Test
@@ -157,12 +158,12 @@ class ReceiptRepositoryImplTest {
         val repository = repository()
 
         gmail.failAttachmentOf = "m1"
-        assertEquals(SyncResult.Success(newReceipts = 3, downloaded = 1, incomplete = 2), repository.sync(lookBackMonths = 3))
+        assertEquals(SyncResult.Success(downloaded = 1, incomplete = 2), repository.sync(lookBackMonths = 3))
         assertEquals(listOf("FOUND", "FOUND"), rows().filter { it.gmail_message_id == "m1" }.map { it.status })
 
         gmail.failAttachmentOf = null
         gmail.fetchedMessages.clear()
-        assertEquals(SyncResult.Success(newReceipts = 0, downloaded = 2), repository.sync(lookBackMonths = 3))
+        assertEquals(SyncResult.Success(downloaded = 2), repository.sync(lookBackMonths = 3))
         assertEquals(listOf("m1"), gmail.fetchedMessages) // read again only for fresh attachment ids
         assertTrue(rows().all { it.status == "TEXT_EXTRACTED" })
     }
@@ -242,7 +243,7 @@ class ReceiptRepositoryImplTest {
 
         val result = repository().sync(lookBackMonths = 3)
 
-        assertEquals(SyncResult.Success(newReceipts = 2, downloaded = 2), result)
+        assertEquals(SyncResult.Success(downloaded = 2), result)
         assertTrue(rows().all { it.status == "FAILED" && it.pdf_path != null })
     }
 
@@ -309,7 +310,7 @@ class ReceiptRepositoryImplTest {
 
         val result = repository().sync(lookBackMonths = 3)
 
-        assertEquals(SyncResult.Success(newReceipts = 1, downloaded = 1), result) // the sync itself worked
+        assertEquals(SyncResult.Success(downloaded = 1), result) // the sync itself worked
         assertEquals("TEXT_EXTRACTED", rows().single().status)
     }
 
@@ -389,7 +390,7 @@ class ReceiptRepositoryImplTest {
 
         val result = repository.sync(lookBackMonths = 3)
 
-        assertEquals(SyncResult.Success(newReceipts = 1, downloaded = 1), result)
+        assertEquals(SyncResult.Success(downloaded = 1), result)
         assertEquals("READY", rows().single().status)
         assertEquals(0, database.productEmbeddingQueries.count().executeAsOne())
 

@@ -39,14 +39,16 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 
 /**
- * Gmail → database → files → text → items → vectors. For each receipt: download the PDF, save the file,
- * extract its text on the phone, parse the fixed fields, save them (FOUND → DOWNLOADED → TEXT_EXTRACTED);
- * then, with a Gemini key, extract its items (→ READY). Only the receipt's item section is sent to Gemini.
- * Last, new products get a vector for semantic search (only their name and category are sent).
+ * Gmail → database → files → text → items → vectors. Each sync runs these steps in order:
+ * 1. Read every email not read before and save its PDFs as FOUND receipts (and mark it checked).
+ * 2. Download every FOUND receipt: save the file, extract its text on the phone, parse the fixed fields
+ *    (FOUND → DOWNLOADED → TEXT_EXTRACTED).
+ * 3. Extract the text of receipts downloaded earlier but never read (e.g. before this app version).
+ * 4. With a Gemini key, extract the items (→ READY). Only the receipt's item section is sent to Gemini.
+ * 5. New products get a vector for semantic search (only their name and category are sent).
  *
  * - Up to [maxParallelEmails] emails are handled at once; the next starts as soon as one finishes.
- * - Each email is read once: its PDFs are downloaded right away with the attachment ids from that
- *   same response (Gmail changes attachment ids per request, so they're never stored).
+ * - Gmail changes attachment ids per request, so they're never stored: step 2 reads the email again first.
  * - Every email and PDF succeeds or fails on its own. Failures are retried by the next sync: an
  *   unread email stays unchecked, an undownloaded receipt stays FOUND. Only a failed search, or
  *   revoked access, fails the whole sync.
@@ -64,10 +66,9 @@ class ReceiptRepositoryImpl(
     private val maxParallelEmails: Int = 4
 ) : ReceiptRepository {
 
-    /** What one email (or one retry) contributed to the sync. */
-    private data class Outcome(val newReceipts: Int = 0, val downloaded: Int = 0, val incomplete: Int = 0) {
-        operator fun plus(other: Outcome) =
-            Outcome(newReceipts + other.newReceipts, downloaded + other.downloaded, incomplete + other.incomplete)
+    /** What one email contributed to the sync. */
+    private data class Outcome(val downloaded: Int = 0, val incomplete: Int = 0) {
+        operator fun plus(other: Outcome) = Outcome(downloaded + other.downloaded, incomplete + other.incomplete)
     }
 
     override fun observeReceipts(): Flow<List<Receipt>> = local.observeAll().map { rows -> rows.map { it.toDomain() } }
@@ -75,21 +76,16 @@ class ReceiptRepositoryImpl(
     override suspend fun spendingBetween(fromMillis: Long, toMillis: Long): DailySpending = local.spendingBetween(fromMillis, toMillis)
 
     override suspend fun sync(lookBackMonths: Int): SyncResult = try {
-        // Read before handling new emails, so this sync's own failures aren't retried twice.
-        val leftovers = local.receiptsWithStatus(ReceiptStatus.FOUND).groupBy { it.gmail_message_id }
-        val unread = local.receiptsWithStatus(ReceiptStatus.DOWNLOADED) // text not extracted yet (or app updated)
-        val newIds = allMatchingMessageIds(ContinenteReceipts.gmailQuery(lookBackMonths)).filterNot { local.isChecked(it) }
-
         val limit = Semaphore(maxParallelEmails)
-        val outcome = coroutineScope {
-            val newEmails = newIds.map { id -> async { limit.withPermit { syncNewEmail(id) } } }
-            val retries = leftovers.map { (id, rows) -> async { limit.withPermit { retryDownloads(id, rows) } } }
-            val texts = unread.map { receipt -> async { limit.withPermit { extractFromFile(receipt) } } }
-            (newEmails + retries + texts).awaitAll().fold(Outcome(), Outcome::plus)
-        }
+        val newIds = allMatchingMessageIds(ContinenteReceipts.gmailQuery(lookBackMonths)).filterNot { local.isChecked(it) }
+        val read = newIds.inParallel(limit) { saveNewEmail(it) }
+        val downloads = local.receiptsWithStatus(ReceiptStatus.FOUND).groupBy { it.gmail_message_id }.toList()
+            .inParallel(limit) { (id, receipts) -> downloadFoundReceipts(id, receipts) }
+        local.receiptsWithStatus(ReceiptStatus.DOWNLOADED).inParallel(limit) { extractFromFile(it) }
         extractItems(limit) // after the text step, so this sync's new receipts are included
         embedProducts() // after items, so this sync's new products are included
-        SyncResult.Success(outcome.newReceipts, outcome.downloaded, outcome.incomplete)
+        val outcome = (read + downloads).fold(Outcome(), Outcome::plus)
+        SyncResult.Success(outcome.downloaded, outcome.incomplete)
     } catch (e: CancellationException) {
         throw e
     } catch (e: GmailNotAuthorizedException) {
@@ -98,6 +94,11 @@ class ReceiptRepositoryImpl(
     } catch (e: Exception) {
         logWarning(TAG, "sync: Gmail search failed", e)
         SyncResult.Failure(SyncFailure.FAILED)
+    }
+
+    /** Runs [block] for every item, at most [limit] at once, and waits for all of them. */
+    private suspend fun <T, R> List<T>.inParallel(limit: Semaphore, block: suspend (T) -> R): List<R> = coroutineScope {
+        map { item -> async { limit.withPermit { block(item) } } }.awaitAll()
     }
 
     /** Ids only (cheap): a few receipts a week stay well under [MAX_PAGES] pages. */
@@ -112,20 +113,19 @@ class ReceiptRepositoryImpl(
         return ids
     }
 
-    /** Read the email once, save its receipts (and mark it checked), then download them. */
-    private suspend fun syncNewEmail(messageId: String): Outcome = isolated(messageId, onFailure = Outcome(incomplete = 1)) {
+    /** Saves the email's PDFs as FOUND receipts and marks it checked. Downloading is the next step. */
+    private suspend fun saveNewEmail(messageId: String): Outcome = isolated(messageId, onFailure = Outcome(incomplete = 1)) {
         val message = gmail.getMessage(messageId)
-        val newReceipts = local.saveCheckedMessage(
+        local.saveCheckedMessage(
             messageId = message.id,
             receivedAtMillis = message.receivedAtMillis() ?: currentTimeMillis(),
             pdfs = message.pdfAttachments()
         )
-        val pending = local.receiptsOfMessage(message.id).filter { it.status == ReceiptStatus.FOUND.name }
-        download(message, pending).copy(newReceipts = newReceipts)
+        Outcome()
     }
 
-    /** Receipts left FOUND by an earlier sync: read their email again for fresh attachment ids. */
-    private suspend fun retryDownloads(messageId: String, receipts: List<ReceiptRow>): Outcome =
+    /** Reads the email again for fresh attachment ids, then downloads its FOUND receipts. */
+    private suspend fun downloadFoundReceipts(messageId: String, receipts: List<ReceiptRow>): Outcome =
         isolated(messageId, onFailure = Outcome(incomplete = receipts.size)) {
             download(gmail.getMessage(messageId), receipts)
         }
@@ -185,9 +185,7 @@ class ReceiptRepositoryImpl(
         val key = geminiKeys.key.first() ?: return
         val pending = local.receiptsWithStatus(ReceiptStatus.TEXT_EXTRACTED)
         try {
-            coroutineScope {
-                pending.map { receipt -> async { limit.withPermit { extractItemsOf(key, receipt) } } }.awaitAll()
-            }
+            pending.inParallel(limit) { extractItemsOf(key, it) }
         } catch (e: ExtractionUnavailableException) {
             // The cause carries Gemini's error text (e.g. which quota was hit): Google's message, no receipt data.
             logWarning(TAG, "sync: item extraction paused (${e.message}); retried next sync", e.cause)
