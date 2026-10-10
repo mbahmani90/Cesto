@@ -38,20 +38,12 @@ class ReceiptLocalDataSource(
     /**
      * Saves the message's PDFs as receipts and marks the message as checked, in one transaction:
      * an interrupted sync never leaves a message "checked" without its receipts.
-     * @return how many receipts are new.
      */
-    suspend fun saveCheckedMessage(messageId: String, receivedAtMillis: Long, pdfs: List<PdfAttachmentRef>): Int =
-        withContext(ioDispatcher) {
-            database.transactionWithResult {
-                pdfs.sumOf { pdf ->
-                    receipts.insertIfNew(messageId, pdf.partId, pdf.fileName, receivedAtMillis)
-                    receipts.changes().executeAsOne().toInt()
-                }.also { messages.insert(messageId, receivedAtMillis, currentTimeMillis()) }
-            }
+    suspend fun saveCheckedMessage(messageId: String, receivedAtMillis: Long, pdfs: List<PdfAttachmentRef>) = withContext(ioDispatcher) {
+        database.transaction {
+            pdfs.forEach { pdf -> receipts.insertIfNew(messageId, pdf.partId, pdf.fileName, receivedAtMillis) }
+            messages.insert(messageId, receivedAtMillis, currentTimeMillis())
         }
-
-    suspend fun receiptsOfMessage(messageId: String): List<ReceiptRow> = withContext(ioDispatcher) {
-        receipts.selectByMessage(messageId).executeAsList()
     }
 
     suspend fun receiptsWithStatus(status: ReceiptStatus): List<ReceiptRow> = withContext(ioDispatcher) {
