@@ -43,7 +43,7 @@ class ReceiptRepositoryImplTest {
     @AfterTest
     fun tearDown() = driver.close()
 
-    private fun TestScope.repository(maxParallelEmails: Int = 4) = ReceiptRepositoryImpl(
+    private fun TestScope.repository(batchSize: Int = 4) = ReceiptRepositoryImpl(
         gmail = gmail,
         local = ReceiptLocalDataSource(database, StandardTestDispatcher(testScheduler), currentTimeMillis = { NOW }),
         files = files,
@@ -53,7 +53,7 @@ class ReceiptRepositoryImplTest {
         embeddings = embeddings,
         geminiKeys = geminiKeys,
         currentTimeMillis = { NOW },
-        maxParallelEmails = maxParallelEmails
+        batchSize = batchSize
     )
 
     private fun pdf(text: String) = Base64.UrlSafe.encode(text.encodeToByteArray())
@@ -61,7 +61,7 @@ class ReceiptRepositoryImplTest {
     private fun rows() = database.receiptQueries.selectAll().executeAsList()
 
     @Test
-    fun firstSync_savesAndDownloadsEveryPdf() = runTest {
+    fun firstSync_savesAndDownloadsEveryPdf_readingEachEmailOnce() = runTest {
         gmail.mailbox += Mail("m3", receivedAt = 3_000, pdfs = mapOf("1" to pdf("%PDF-3")))
         gmail.mailbox += Mail("m2", receivedAt = 2_000, pdfs = mapOf("1" to pdf("%PDF-2a"), "2" to pdf("%PDF-2b")))
         gmail.mailbox += Mail("m1", receivedAt = 1_000, pdfs = emptyMap()) // matched the query, no PDF
@@ -69,8 +69,7 @@ class ReceiptRepositoryImplTest {
         val result = repository().sync(lookBackMonths = 3)
 
         assertEquals(SyncResult.Success(downloaded = 3), result)
-        // Read once to save the receipts, again for fresh attachment ids; m1 has no PDF to download.
-        assertEquals(listOf("m1", "m2", "m2", "m3", "m3"), gmail.fetchedMessages.sorted())
+        assertEquals(listOf("m1", "m2", "m3"), gmail.fetchedMessages.sorted()) // each email read once
         assertTrue(rows().all { it.status == "TEXT_EXTRACTED" && it.pdf_path == "receipts/receipt-${it.id}.pdf" })
         assertEquals(setOf("%PDF-3", "%PDF-2a", "%PDF-2b"), files.files.values.map { it.decodeToString() }.toSet())
     }
@@ -94,16 +93,16 @@ class ReceiptRepositoryImplTest {
     }
 
     @Test
-    fun atMostMaxParallelEmails_areHandledAtOnce() = runTest {
+    fun emails_areHandledInBatches() = runTest {
         gmail = FakeGmailApi(pageSize = 100, requestMillis = 100)
         repeat(10) { i -> gmail.mailbox += Mail("m$i", receivedAt = 100L - i, pdfs = mapOf("1" to pdf("%PDF-$i"))) }
 
-        val result = repository(maxParallelEmails = 3).sync(lookBackMonths = 3)
+        val result = repository(batchSize = 3).sync(lookBackMonths = 3)
 
         assertEquals(SyncResult.Success(downloaded = 10), result)
         assertEquals(3, gmail.maxInFlight)
-        // 10 emails × 3 requests × 100 ms in parallels of 3 instead of 3 000 ms one by one
-        assertTrue(testScheduler.currentTime <= 1_200, "took ${testScheduler.currentTime} ms")
+        // 10 emails × 2 requests × 100 ms in batches of 3, 3, 3, 1 instead of 2 000 ms one by one
+        assertEquals(800, testScheduler.currentTime)
     }
 
     @Test
@@ -117,7 +116,7 @@ class ReceiptRepositoryImplTest {
         val result = repository.sync(lookBackMonths = 3)
 
         assertEquals(SyncResult.Success(downloaded = 1), result)
-        assertEquals(listOf("m2", "m2"), gmail.fetchedMessages) // save, then download
+        assertEquals(listOf("m2"), gmail.fetchedMessages)
         assertEquals(2, rows().size)
     }
 
@@ -148,7 +147,7 @@ class ReceiptRepositoryImplTest {
         gmail.failGetMessage = null
         gmail.fetchedMessages.clear()
         assertEquals(SyncResult.Success(downloaded = 1), repository.sync(lookBackMonths = 3))
-        assertEquals(listOf("m2", "m2"), gmail.fetchedMessages)
+        assertEquals(listOf("m2"), gmail.fetchedMessages)
     }
 
     @Test
@@ -300,6 +299,21 @@ class ReceiptRepositoryImplTest {
 
         assertEquals("READY", rows().single().status)
         assertTrue(gmail.fetchedMessages.isEmpty())
+    }
+
+    @Test
+    fun geminiLoop_goesThroughEveryBatch_skippingFailuresUntilTheNextSync() = runTest {
+        geminiKeys.key.value = "AIza-test"
+        itemExtractor.failFor = "BROKEN LINE"
+        repeat(5) { i ->
+            val text = if (i == 1) PDFBOX_RECEIPT.replace("BANANA", "BROKEN LINE") else PDFBOX_RECEIPT
+            gmail.mailbox += Mail("m$i", receivedAt = 10L - i, pdfs = mapOf("1" to pdf(text)))
+        }
+
+        repository(batchSize = 2).sync(lookBackMonths = 3)
+
+        assertEquals(4, rows().count { it.status == "READY" })
+        assertEquals("TEXT_EXTRACTED", rows().single { it.gmail_message_id == "m1" }.status)
     }
 
     @Test

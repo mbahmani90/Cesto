@@ -39,6 +39,13 @@ SELECT * FROM receipt WHERE gmail_message_id = ? ORDER BY id;
 selectByStatus:
 SELECT * FROM receipt WHERE status = ? ORDER BY received_at DESC, id DESC;
 
+-- One batch of the sync: the next receipts with this status after the last one handled.
+selectByStatusAfter:
+SELECT * FROM receipt WHERE status = ? AND id > ? ORDER BY id LIMIT ?;
+
+selectFoundOfMessage:
+SELECT * FROM receipt WHERE gmail_message_id = ? AND status = 'FOUND' ORDER BY id;
+
 markDownloaded:
 UPDATE receipt SET pdf_path = ?, status = 'DOWNLOADED' WHERE id = ?;
 
