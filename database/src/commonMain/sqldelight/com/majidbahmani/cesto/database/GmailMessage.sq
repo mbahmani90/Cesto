@@ -13,6 +13,11 @@ VALUES (?, ?, ?);
 isChecked:
 SELECT EXISTS(SELECT 1 FROM gmail_message WHERE id = ?);
 
+-- Not read yet, or one of its receipts still waits for its download.
+needsSync:
+SELECT NOT EXISTS(SELECT 1 FROM gmail_message WHERE id = :id)
+    OR EXISTS(SELECT 1 FROM receipt WHERE gmail_message_id = :id AND status = 'FOUND');
+
 latestReceivedAt:
 SELECT MAX(received_at) FROM gmail_message;
 

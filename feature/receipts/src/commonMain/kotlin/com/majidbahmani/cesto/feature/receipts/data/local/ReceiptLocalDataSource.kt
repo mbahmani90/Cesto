@@ -31,8 +31,9 @@ class ReceiptLocalDataSource(
 
     fun observeAll(): Flow<List<ReceiptRow>> = receipts.selectAll().asFlow().mapToList(ioDispatcher)
 
-    suspend fun isChecked(messageId: String): Boolean = withContext(ioDispatcher) {
-        messages.isChecked(messageId).executeAsOne()
+    /** Not read yet, or a receipt of it still waits for its download. */
+    suspend fun needsSync(messageId: String): Boolean = withContext(ioDispatcher) {
+        messages.needsSync(messageId).executeAsOne()
     }
 
     /**
@@ -46,8 +47,13 @@ class ReceiptLocalDataSource(
         }
     }
 
-    suspend fun receiptsWithStatus(status: ReceiptStatus): List<ReceiptRow> = withContext(ioDispatcher) {
-        receipts.selectByStatus(status.name).executeAsList()
+    suspend fun foundReceiptsOf(messageId: String): List<ReceiptRow> = withContext(ioDispatcher) {
+        receipts.selectFoundOfMessage(messageId).executeAsList()
+    }
+
+    /** Up to [limit] receipts with [status] and an id above [afterId], in id order. */
+    suspend fun receiptsWithStatus(status: ReceiptStatus, afterId: Long, limit: Int): List<ReceiptRow> = withContext(ioDispatcher) {
+        receipts.selectByStatusAfter(status.name, afterId, limit.toLong()).executeAsList()
     }
 
     suspend fun markDownloaded(id: Long, pdfPath: String) = withContext(ioDispatcher) {

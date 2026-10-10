@@ -181,14 +181,16 @@ unique printed name a `product` (full Portuguese name, category, units per pack)
 against the receipt's subtotal. Gemini overloaded → retry, then a lighter model; key or quota errors pause
 extraction until the next sync.
 
-#### Gmail: search and read
+#### Sync: Gmail loop and Gemini loop
 
-![Gmail sync: search with messages.list, then read each new email with messages.get](art/gmail-search-and-read-flow.svg)
+![Receipt sync in batches of 4: the Gmail loop reads, saves and downloads emails page by page, then the Gemini loop extracts items](art/gmail-search-and-read-flow.svg)
 
-Each sync first searches Gmail for Continente receipt emails (ids only, page by page) and drops the ones
-already checked. Each new email is then read, up to 4 at a time: its PDF parts are saved as `FOUND`
-receipts and the email is marked checked. Next, every `FOUND` receipt is downloaded; its email is read again
-first, because Gmail changes attachment ids per request. Every Gmail request goes through `KtorGmailApi`.
+Each sync runs two loops. The **Gmail loop** searches for Continente receipt emails page by page (ids only)
+and keeps the emails that are new or still have a `FOUND` receipt. They're handled 4 at a time: each email
+is read once, its PDF parts are saved as `FOUND` receipts, and they're downloaded with the attachment ids
+from that same response, stored and read on the phone. The next page is fetched when every batch is done.
+Then the **Gemini loop** extracts the items of the receipts with text, 4 at a time from the database.
+Every Gmail request goes through `KtorGmailApi`.
 
 ## Tech stack
 
