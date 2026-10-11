@@ -105,7 +105,8 @@ internal fun SettingsRoute(
         onCancelChange = viewModel::onCancelChange,
         onRemoveKey = viewModel::onRemoveKey,
         contentPadding = contentPadding,
-        accountSection = { AccountSectionRoute(onSignedOut = onSignedOut) }
+        accountSection = { AccountSectionRoute(onSignedOut = onSignedOut) },
+        modelSection = { ModelSectionRoute() }
     )
 }
 
@@ -126,7 +127,9 @@ internal fun SettingsScreen(
     /** Space the floating bottom bar covers. */
     contentPadding: PaddingValues = PaddingValues(),
     /** The Account card, with its own ViewModel; empty in previews. */
-    accountSection: @Composable () -> Unit = {}
+    accountSection: @Composable () -> Unit = {},
+    /** The Gemini model card, with its own ViewModel; empty in previews. */
+    modelSection: @Composable () -> Unit = {}
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
         Column(
@@ -188,6 +191,8 @@ internal fun SettingsScreen(
             }
 
             uiState.feedback?.let { Feedback(it) }
+
+            modelSection()
         }
     }
 }

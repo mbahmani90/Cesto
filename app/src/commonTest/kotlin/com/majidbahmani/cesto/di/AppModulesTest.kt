@@ -11,6 +11,7 @@ import com.majidbahmani.cesto.feature.receipts.data.local.ReceiptFileStore
 import com.majidbahmani.cesto.feature.receipts.data.remote.GmailApi
 import com.majidbahmani.cesto.feature.receipts.data.remote.KtorGmailApi
 import com.majidbahmani.cesto.feature.receipts.presentation.viewmodel.ReceiptsViewModel
+import com.majidbahmani.cesto.feature.settings.presentation.viewmodel.ModelViewModel
 import com.majidbahmani.cesto.feature.settings.presentation.viewmodel.SettingsViewModel
 import com.majidbahmani.cesto.gmailauth.GmailAuthError
 import com.majidbahmani.cesto.gmailauth.GmailAuthorizer
@@ -131,6 +132,11 @@ class AppModulesTest {
     @Test
     fun gmailApi_resolvesToKtorImplementation() {
         assertIs<KtorGmailApi>(app.koin.get<GmailApi>())
+    }
+
+    @Test
+    fun modelViewModel_resolves() {
+        app.koin.get<ModelViewModel>()
     }
 
     @Test
