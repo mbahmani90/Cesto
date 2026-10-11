@@ -10,9 +10,15 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 
 internal actual val llmPlatformModule: Module = module {
-    single<GeminiKeyStore> { AndroidGeminiKeyStore(context = get<Context>(), ioDispatcher = get(IoDispatcher)) }
-    single<DataStore<Preferences>> {
+    single<GeminiKeyStore> { AndroidGeminiKeyStore(dataStore = get(SecretsDataStore), ioDispatcher = get(IoDispatcher)) }
+    single<DataStore<Preferences>>(SecretsDataStore) {
         val context = get<Context>()
-        settingsDataStore { context.filesDir.resolve(SETTINGS_FILE).absolutePath }
+        preferencesDataStore {
+            context.filesDir.resolve(SECRETS_FILE).absolutePath
+        }
+    }
+    single<DataStore<Preferences>>(SettingsDataStore) {
+        val context = get<Context>()
+        preferencesDataStore { context.filesDir.resolve(SETTINGS_FILE).absolutePath }
     }
 }
