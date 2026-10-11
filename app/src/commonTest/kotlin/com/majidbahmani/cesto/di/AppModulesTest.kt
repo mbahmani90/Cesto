@@ -11,12 +11,15 @@ import com.majidbahmani.cesto.feature.receipts.data.local.ReceiptFileStore
 import com.majidbahmani.cesto.feature.receipts.data.remote.GmailApi
 import com.majidbahmani.cesto.feature.receipts.data.remote.KtorGmailApi
 import com.majidbahmani.cesto.feature.receipts.presentation.viewmodel.ReceiptsViewModel
+import com.majidbahmani.cesto.feature.settings.presentation.viewmodel.ModelViewModel
 import com.majidbahmani.cesto.feature.settings.presentation.viewmodel.SettingsViewModel
 import com.majidbahmani.cesto.gmailauth.GmailAuthError
 import com.majidbahmani.cesto.gmailauth.GmailAuthorizer
 import com.majidbahmani.cesto.gmailauth.GoogleIdTokenProvider
 import com.majidbahmani.cesto.gmailauth.GoogleSignInError
-import com.majidbahmani.cesto.llm.GeminiKeyStore
+import com.majidbahmani.cesto.llm.GeminiModel
+import com.majidbahmani.cesto.llm.data.local.GeminiKeyStore
+import com.majidbahmani.cesto.llm.data.local.GeminiModelStore
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import kotlin.test.AfterTest
@@ -68,12 +71,18 @@ class AppModulesTest {
         override suspend fun clear() = error("not used")
     }
 
+    private object UnusedModelStore : GeminiModelStore {
+        override val saved = flowOf<GeminiModel?>(null)
+        override suspend fun save(model: GeminiModel) = error("not used")
+    }
+
     /** Only what needs a real device is replaced (Android Context, files on disk); the rest is the real graph. */
     private val platformReplacements = module {
         single<SqlDriver> { createTestDriver() }
         single<ReceiptFileStore> { UnusedFileStore }
         single<PdfTextExtractor> { UnusedExtractor }
         single<GeminiKeyStore> { UnusedKeyStore }
+        single<GeminiModelStore> { UnusedModelStore }
         single<SessionStore> { UnusedSessionStore }
     }
 
@@ -123,6 +132,11 @@ class AppModulesTest {
     @Test
     fun gmailApi_resolvesToKtorImplementation() {
         assertIs<KtorGmailApi>(app.koin.get<GmailApi>())
+    }
+
+    @Test
+    fun modelViewModel_resolves() {
+        app.koin.get<ModelViewModel>()
     }
 
     @Test

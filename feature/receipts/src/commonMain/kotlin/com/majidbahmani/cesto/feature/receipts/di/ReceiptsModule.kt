@@ -36,7 +36,7 @@ val receiptsModule = module {
         )
     }
     single { ContinenteReceiptParser() }
-    single<ReceiptItemExtractor> { GeminiReceiptItemExtractor(gemini = get()) }
+    single<ReceiptItemExtractor> { GeminiReceiptItemExtractor(gemini = get(), models = get()) }
     single<ReceiptRepository> {
         ReceiptRepositoryImpl(
             gmail = get(),

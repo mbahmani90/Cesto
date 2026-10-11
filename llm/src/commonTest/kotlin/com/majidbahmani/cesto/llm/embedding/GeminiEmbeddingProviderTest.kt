@@ -1,8 +1,8 @@
 package com.majidbahmani.cesto.llm.embedding
 
 import com.majidbahmani.cesto.core.network.createHttpClient
-import com.majidbahmani.cesto.llm.GeminiApi
-import com.majidbahmani.cesto.llm.GeminiKeyStore
+import com.majidbahmani.cesto.llm.data.local.GeminiKeyStore
+import com.majidbahmani.cesto.llm.data.remote.GeminiApi
 import com.majidbahmani.cesto.llm.embedding.EmbeddingUnavailableException.Reason
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond

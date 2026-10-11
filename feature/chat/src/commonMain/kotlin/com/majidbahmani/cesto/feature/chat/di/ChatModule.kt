@@ -23,7 +23,7 @@ val chatModule = module {
             currentTimeMillis = { Clock.System.now().toEpochMilliseconds() }
         )
     }
-    single<AgentModel> { GeminiAgentModel(gemini = get(), keys = get(), prompt = get()) }
+    single<AgentModel> { GeminiAgentModel(gemini = get(), keys = get(), models = get(), prompt = get()) }
     factory { AskQuestionUseCase(model = get(), tools = get()) }
     factory { ObserveAssistantReadyUseCase(model = get()) }
     viewModel { ChatViewModel(observeAssistantReady = get(), askQuestion = get()) }

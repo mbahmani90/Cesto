@@ -6,7 +6,9 @@ import com.majidbahmani.cesto.feature.chat.domain.model.ModelReply
 import com.majidbahmani.cesto.feature.chat.domain.model.ReceiptTools
 import com.majidbahmani.cesto.feature.chat.domain.model.ToolCall
 import com.majidbahmani.cesto.feature.chat.domain.model.ToolResult
-import com.majidbahmani.cesto.llm.GeminiKeyStore
+import com.majidbahmani.cesto.llm.GeminiModel
+import com.majidbahmani.cesto.llm.data.local.GeminiKeyStore
+import com.majidbahmani.cesto.llm.data.local.GeminiModelStore
 import com.majidbahmani.cesto.llm.embedding.EmbeddingProvider
 import com.majidbahmani.cesto.llm.embedding.EmbeddingUnavailableException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,6 +53,13 @@ class FakeGeminiKeyStore(initial: String? = "AIza-test") : GeminiKeyStore {
     }
     override suspend fun clear() {
         key.value = null
+    }
+}
+
+class FakeGeminiModelStore(initial: GeminiModel? = null) : GeminiModelStore {
+    override val saved = MutableStateFlow(initial)
+    override suspend fun save(model: GeminiModel) {
+        saved.value = model
     }
 }
 

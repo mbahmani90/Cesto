@@ -1,7 +1,9 @@
 package com.majidbahmani.cesto.feature.receipts.data.extraction
 
 import com.majidbahmani.cesto.core.network.createHttpClient
-import com.majidbahmani.cesto.llm.GeminiApi
+import com.majidbahmani.cesto.feature.receipts.fake.FakeGeminiModelStore
+import com.majidbahmani.cesto.llm.GeminiModel
+import com.majidbahmani.cesto.llm.data.remote.GeminiApi
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
@@ -22,6 +24,7 @@ import kotlinx.serialization.json.jsonPrimitive
 class GeminiReceiptItemExtractorTest {
 
     private val requests = mutableListOf<HttpRequestData>()
+    private val models = FakeGeminiModelStore()
 
     private fun extractor(status: HttpStatusCode = HttpStatusCode.OK, answer: String = "") = extractor(answer) { status }
 
@@ -36,7 +39,8 @@ class GeminiReceiptItemExtractorTest {
                     respond(if (status == HttpStatusCode.OK) body else "{}", status, headersOf(HttpHeaders.ContentType, "application/json"))
                 }
             )
-        )
+        ),
+        models
     )
 
     /** What Gemini's structured output looks like for the two lines of the invented sample. */
@@ -65,7 +69,7 @@ class GeminiReceiptItemExtractorTest {
 
         val request = requests.single()
         assertEquals(
-            "https://generativelanguage.googleapis.com/v1beta/models/${GeminiApi.EXTRACTION_MODEL}:generateContent",
+            "https://generativelanguage.googleapis.com/v1beta/models/${GeminiModel.DEFAULT.id}:generateContent", // nothing saved
             request.url.toString()
         )
         assertEquals("AIza-test", request.headers[GeminiApi.API_KEY_HEADER])
@@ -95,19 +99,20 @@ class GeminiReceiptItemExtractorTest {
     }
 
     @Test
-    fun mainModelStaysOverloaded_theFallbackModelIsUsed() = runTest {
-        extractor(answer) { attempt -> if (attempt < 2) HttpStatusCode.ServiceUnavailable else HttpStatusCode.OK }
-            .extract("AIza-test", "section")
+    fun chosenModel_isUsed() = runTest {
+        models.save(GeminiModel.FLASH_3_8)
 
-        assertTrue(requests[0].url.toString().contains(GeminiApi.EXTRACTION_MODEL))
-        assertTrue(requests[2].url.toString().contains(GeminiApi.FALLBACK_MODEL))
+        extractor(answer = answer).extract("AIza-test", "section")
+
+        assertTrue(requests.single().url.toString().contains("/models/gemini-3.8-flash:"))
     }
 
     @Test
-    fun bothModelsOverloaded_pausesExtraction() = runTest {
+    fun staysOverloaded_pausesExtraction_withoutAnotherModel() = runTest {
         assertFailsWith<ExtractionUnavailableException> {
             extractor(answer) { HttpStatusCode.ServiceUnavailable }.extract("AIza-test", "section")
         }
-        assertEquals(4, requests.size) // 2 tries per model, then stop
+        assertEquals(2, requests.size) // 2 tries, then stop
+        assertTrue(requests.all { it.url.toString().contains("/models/${GeminiModel.DEFAULT.id}:") })
     }
 }

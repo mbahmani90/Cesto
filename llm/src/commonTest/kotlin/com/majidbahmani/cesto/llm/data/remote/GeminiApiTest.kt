@@ -1,6 +1,7 @@
-package com.majidbahmani.cesto.llm
+package com.majidbahmani.cesto.llm.data.remote
 
 import com.majidbahmani.cesto.core.network.createHttpClient
+import com.majidbahmani.cesto.llm.GeminiModel
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
@@ -64,11 +65,11 @@ class GeminiApiTest {
     fun generateJson_returnsTheTextOfTheFirstCandidate() = runTest {
         val api = api(body = """{"candidates":[{"content":{"parts":[{"text":"{\"lines\":"},{"text":"[]}"}]},"finishReason":"STOP"}]}""")
 
-        val json = api.generateJson("AIza-test", "instruction", "prompt", buildJsonObject { put("type", "OBJECT") })
+        val json = api.generateJson("AIza-test", "instruction", "prompt", buildJsonObject { put("type", "OBJECT") }, GeminiModel.FLASH_2_5)
 
         assertEquals("{\"lines\":[]}", json)
         assertEquals(
-            "https://generativelanguage.googleapis.com/v1beta/models/${GeminiApi.EXTRACTION_MODEL}:generateContent",
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
             requests.single().url.toString()
         )
     }
@@ -78,7 +79,7 @@ class GeminiApiTest {
         val api = api(body = """{"candidates":[{"finishReason":"SAFETY"}]}""")
 
         val error = assertFailsWith<GeminiEmptyResponseException> {
-            api.generateJson("AIza-test", "instruction", "prompt", buildJsonObject { })
+            api.generateJson("AIza-test", "instruction", "prompt", buildJsonObject { }, GeminiModel.DEFAULT)
         }
         assertEquals("SAFETY", error.finishReason)
     }
