@@ -1,10 +1,8 @@
 package com.majidbahmani.cesto.llm.data.local
 
-import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
-import androidx.datastore.core.DataMigration
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -74,36 +72,12 @@ class AndroidGeminiKeyStore(private val dataStore: DataStore<Preferences>, priva
         }.generateKey()
     }
 
-    /**
-     * Moves the ciphertext from the old SharedPreferences file into DataStore once, then deletes that file.
-     * Same format, so no decrypting. Remove when no installed version older than this one is left.
-     */
-    private class SharedPreferencesMigration(private val context: Context) : DataMigration<Preferences> {
-        private val old get() = context.getSharedPreferences(OLD_PREFERENCES, Context.MODE_PRIVATE)
-
-        override suspend fun shouldMigrate(currentData: Preferences) = currentData[ENCRYPTED_KEY] == null && old.contains(OLD_PREF_KEY)
-
-        override suspend fun migrate(currentData: Preferences): Preferences {
-            val encrypted = old.getString(OLD_PREF_KEY, null) ?: return currentData
-            return currentData.toMutablePreferences().apply { this[ENCRYPTED_KEY] = encrypted }.toPreferences()
-        }
-
-        override suspend fun cleanUp() {
-            context.deleteSharedPreferences(OLD_PREFERENCES)
-        }
-    }
-
-    companion object {
-        /** Pass to the secrets DataStore so a key saved by an older version isn't lost. */
-        fun migrations(context: Context): List<DataMigration<Preferences>> = listOf(SharedPreferencesMigration(context.applicationContext))
-
-        private val ENCRYPTED_KEY = stringPreferencesKey("gemini_key")
-        private const val ANDROID_KEYSTORE = "AndroidKeyStore"
-        private const val ALIAS = "cesto_gemini_key"
-        private const val TRANSFORMATION = "AES/GCM/NoPadding"
-        private const val IV_BYTES = 12
-        private const val TAG_BITS = 128
-        private const val OLD_PREFERENCES = "cesto_secrets"
-        private const val OLD_PREF_KEY = "gemini_key"
+    private companion object {
+        val ENCRYPTED_KEY = stringPreferencesKey("gemini_key")
+        const val ANDROID_KEYSTORE = "AndroidKeyStore"
+        const val ALIAS = "cesto_gemini_key"
+        const val TRANSFORMATION = "AES/GCM/NoPadding"
+        const val IV_BYTES = 12
+        const val TAG_BITS = 128
     }
 }

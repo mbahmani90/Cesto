@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import okio.IOException
 
-class DataStoreGeminiModelStore(private val dataStore: DataStore<Preferences>) : GeminiModelStore {
+class GeminiModelStoreImpl(private val dataStore: DataStore<Preferences>) : GeminiModelStore {
 
     override val saved: Flow<GeminiModel?> = dataStore.data
         .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e } // unreadable → nothing saved

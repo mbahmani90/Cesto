@@ -16,16 +16,16 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 
-class DataStoreGeminiModelStoreTest {
+class GeminiModelStoreImplTest {
 
     @Test
     fun nothingSaved_isNull() = runTest {
-        assertNull(DataStoreGeminiModelStore(InMemoryDataStore()).saved.first())
+        assertNull(GeminiModelStoreImpl(InMemoryDataStore()).saved.first())
     }
 
     @Test
     fun savedModel_isReadBack() = runTest {
-        val store = DataStoreGeminiModelStore(InMemoryDataStore())
+        val store = GeminiModelStoreImpl(InMemoryDataStore())
 
         store.save(GeminiModel.FLASH_2_5)
 
@@ -36,7 +36,7 @@ class DataStoreGeminiModelStoreTest {
     fun savedByName() = runTest {
         val dataStore = InMemoryDataStore()
 
-        DataStoreGeminiModelStore(dataStore).save(GeminiModel.FLASH_LITE_2_5)
+        GeminiModelStoreImpl(dataStore).save(GeminiModel.FLASH_LITE_2_5)
 
         assertEquals("FLASH_LITE_2_5", dataStore.data.first()[stringPreferencesKey("gemini_model")])
     }
@@ -46,7 +46,7 @@ class DataStoreGeminiModelStoreTest {
         val dataStore = InMemoryDataStore()
         dataStore.edit { it[stringPreferencesKey("gemini_model")] = "REMOVED_MODEL" }
 
-        assertNull(DataStoreGeminiModelStore(dataStore).saved.first())
+        assertNull(GeminiModelStoreImpl(dataStore).saved.first())
     }
 
     @Test
@@ -56,7 +56,7 @@ class DataStoreGeminiModelStoreTest {
             override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences) = error("not used")
         }
 
-        assertNull(DataStoreGeminiModelStore(broken).saved.first())
+        assertNull(GeminiModelStoreImpl(broken).saved.first())
     }
 
     private class InMemoryDataStore : DataStore<Preferences> {

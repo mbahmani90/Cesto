@@ -13,7 +13,7 @@ import platform.Foundation.NSUserDomainMask
 
 internal actual val llmPlatformModule: Module = module {
     single<GeminiKeyStore> { InMemoryGeminiKeyStore() }
-    single<DataStore<Preferences>> { preferencesDataStore { documentsPath() + "/" + SETTINGS_FILE } }
+    single<DataStore<Preferences>>(SettingsDataStore) { preferencesDataStore { documentsPath() + "/" + SETTINGS_FILE } }
 }
 
 @OptIn(ExperimentalForeignApi::class)
