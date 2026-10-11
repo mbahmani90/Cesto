@@ -28,7 +28,6 @@ import com.majidbahmani.cesto.feature.settings.presentation.viewmodel.ModelUiSta
 import com.majidbahmani.cesto.feature.settings.presentation.viewmodel.ModelViewModel
 import com.majidbahmani.cesto.feature.settings.resources.Res
 import com.majidbahmani.cesto.feature.settings.resources.settings_cancel
-import com.majidbahmani.cesto.feature.settings.resources.settings_model_2_5_note
 import com.majidbahmani.cesto.feature.settings.resources.settings_model_change
 import com.majidbahmani.cesto.feature.settings.resources.settings_model_flash_2_5
 import com.majidbahmani.cesto.feature.settings.resources.settings_model_flash_2_5_text
@@ -38,7 +37,6 @@ import com.majidbahmani.cesto.feature.settings.resources.settings_model_flash_li
 import com.majidbahmani.cesto.feature.settings.resources.settings_model_flash_lite_2_5_text
 import com.majidbahmani.cesto.feature.settings.resources.settings_model_flash_lite_3_5
 import com.majidbahmani.cesto.feature.settings.resources.settings_model_flash_lite_3_5_text
-import com.majidbahmani.cesto.feature.settings.resources.settings_model_intro
 import com.majidbahmani.cesto.feature.settings.resources.settings_model_title
 import com.majidbahmani.cesto.systemdesign.theme.CestoTheme
 import org.jetbrains.compose.resources.StringResource
@@ -67,12 +65,6 @@ internal fun ModelSection(
 ) {
     val selected = uiState.selected ?: return
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(stringResource(Res.string.settings_model_title), style = MaterialTheme.typography.titleLarge)
-        Text(
-            text = stringResource(Res.string.settings_model_intro),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
         Surface(
             color = MaterialTheme.colorScheme.surfaceContainer,
             shape = MaterialTheme.shapes.large,
@@ -127,12 +119,6 @@ private fun ModelPicker(selected: AiModel, onSelect: (AiModel) -> Unit, onDismis
                         }
                     }
                 }
-                Text(
-                    text = stringResource(Res.string.settings_model_2_5_note),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
             }
         },
         confirmButton = {},

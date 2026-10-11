@@ -26,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -96,7 +97,7 @@ fun App(modifier: Modifier = Modifier) {
     }
 }
 
-/** Floating pill (doc 35, style B): rounded, translucent, away from the screen edges. */
+/** Floating pill (doc 35, style B): rounded, away from the screen edges. */
 @Composable
 private fun FloatingPillBar(navController: NavHostController, currentDestination: NavDestination?) {
     Box(
@@ -106,11 +107,12 @@ private fun FloatingPillBar(navController: NavHostController, currentDestination
             .padding(bottom = 16.dp),
         contentAlignment = Alignment.Center
     ) {
+        val glow = Color.LightGray
         Surface(
             shape = CircleShape,
-            // Alpha on the color, not Modifier.alpha: icons and labels stay fully opaque.
-            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.7f),
-            shadowElevation = 8.dp
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            // A light gray shadow instead of the default black one, which can't be seen on the dark background.
+            modifier = Modifier.shadow(elevation = 2.dp, shape = CircleShape, ambientColor = glow, spotColor = glow)
         ) {
             Row(
                 modifier = Modifier.selectableGroup().padding(horizontal = 8.dp, vertical = 6.dp),
