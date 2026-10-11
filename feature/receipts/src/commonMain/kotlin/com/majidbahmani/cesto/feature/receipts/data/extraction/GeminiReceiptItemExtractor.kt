@@ -1,9 +1,9 @@
 package com.majidbahmani.cesto.feature.receipts.data.extraction
 
-import com.majidbahmani.cesto.llm.GeminiApi
 import com.majidbahmani.cesto.llm.GeminiModel
 import com.majidbahmani.cesto.llm.data.local.GeminiModelStore
 import com.majidbahmani.cesto.llm.data.local.current
+import com.majidbahmani.cesto.llm.data.remote.GeminiApi
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.http.HttpStatusCode

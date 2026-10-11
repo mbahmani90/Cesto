@@ -1,4 +1,4 @@
-package com.majidbahmani.cesto.llm.dto
+package com.majidbahmani.cesto.llm.data.remote.dto
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject

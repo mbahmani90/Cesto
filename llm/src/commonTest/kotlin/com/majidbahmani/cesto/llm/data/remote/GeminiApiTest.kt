@@ -1,6 +1,7 @@
-package com.majidbahmani.cesto.llm
+package com.majidbahmani.cesto.llm.data.remote
 
 import com.majidbahmani.cesto.core.network.createHttpClient
+import com.majidbahmani.cesto.llm.GeminiModel
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
