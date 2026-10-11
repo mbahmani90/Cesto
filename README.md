@@ -1,4 +1,4 @@
-<img src="art/cesto-logo.svg" alt="Cesto logo" width="96" align="right">
+<img src="art/cesto-logo.svg" alt="Cesto logo" width="56" align="right">
 
 # Cesto
 
@@ -17,6 +17,18 @@ Gmail and lets you ask questions about them in plain language:
 > onboarding with the Gmail permission on Android and iOS, the receipt sync (Cartão Continente receipt PDFs
 > from Gmail, their text read on the phone), the Gemini key in Settings, LLM extraction of the items, and the
 > **Ask** tab with an agent loop over SQL tools, and RAG: products found by meaning with Gemini embeddings (see [Roadmap](#roadmap)).
+
+## Screenshots
+
+<p>
+  <img src="art/screenshots/onboarding.webp" alt="Onboarding: Continue with Google" width="19%">
+  <img src="art/screenshots/ask.webp" alt="Ask tab: what do I buy most often?" width="19%">
+  <img src="art/screenshots/receipts.webp" alt="Receipts tab: the synced Continente receipts" width="19%">
+  <img src="art/screenshots/settings-key.webp" alt="Settings: adding your own Gemini key in two steps" width="19%">
+  <img src="art/screenshots/settings.webp" alt="Settings: Gemini model, saved key and the signed-in account" width="19%">
+</p>
+
+Onboarding · Ask · Receipts · Settings (adding a Gemini key) · Settings (key saved)
 
 ## How it will work
 
