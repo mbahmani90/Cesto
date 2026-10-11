@@ -1,10 +1,14 @@
 package com.majidbahmani.cesto.feature.receipts.data.extraction
 
 import com.majidbahmani.cesto.llm.GeminiApi
+import com.majidbahmani.cesto.llm.GeminiModel
+import com.majidbahmani.cesto.llm.data.local.GeminiModelStore
+import com.majidbahmani.cesto.llm.data.local.current
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.http.HttpStatusCode
 import kotlin.math.roundToLong
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -19,33 +23,31 @@ import kotlinx.serialization.json.putJsonObject
  * Gemini's structured output: the prompt explains Continente's line layout, the schema makes the answer
  * valid JSON with exactly these fields. Amounts come back in euros and are converted to cents here.
  */
-class GeminiReceiptItemExtractor(private val gemini: GeminiApi) : ReceiptItemExtractor {
+class GeminiReceiptItemExtractor(private val gemini: GeminiApi, private val models: GeminiModelStore) : ReceiptItemExtractor {
 
     private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun extract(key: String, itemSection: String): List<ExtractedLine> {
-        val answer = generateWithRetries(key, itemSection)
+        val answer = generateWithRetries(key, itemSection, models.current())
         return json.decodeFromString<ExtractedItemsDto>(answer).lines.map { it.toLine() }
     }
 
     /**
-     * Gemini overload (503/500) is temporary: wait and retry, then the fallback model; if both stay
+     * Gemini overload (503/500) is temporary: wait and retry the chosen model (no fallback model); if it stays
      * overloaded, pause extraction for this sync instead of sending every receipt into errors.
      */
-    private suspend fun generateWithRetries(key: String, itemSection: String): String {
-        for (model in listOf(GeminiApi.EXTRACTION_MODEL, GeminiApi.FALLBACK_MODEL)) {
-            for (wait in RETRY_WAITS_MILLIS) {
-                try {
-                    return generate(key, itemSection, model)
-                } catch (e: ServerResponseException) {
-                    delay(wait)
-                }
+    private suspend fun generateWithRetries(key: String, itemSection: String, model: GeminiModel): String {
+        for (wait in RETRY_WAITS) {
+            try {
+                return generate(key, itemSection, model)
+            } catch (e: ServerResponseException) {
+                delay(wait)
             }
         }
-        throw ExtractionUnavailableException("Gemini overloaded (5xx on ${GeminiApi.EXTRACTION_MODEL} and ${GeminiApi.FALLBACK_MODEL})")
+        throw ExtractionUnavailableException("Gemini overloaded (5xx on ${model.id})")
     }
 
-    private suspend fun generate(key: String, itemSection: String, model: String): String = try {
+    private suspend fun generate(key: String, itemSection: String, model: GeminiModel): String = try {
         gemini.generateJson(key = key, systemInstruction = INSTRUCTION, prompt = itemSection, responseSchema = SCHEMA, model = model)
     } catch (e: ClientRequestException) {
         when (e.response.status) {
@@ -87,8 +89,8 @@ class GeminiReceiptItemExtractor(private val gemini: GeminiApi) : ReceiptItemExt
     }
 
     private companion object {
-        /** Before each retry: 2 tries per model. */
-        val RETRY_WAITS_MILLIS = listOf(2_000L, 5_000L)
+        /** After each try: 2 tries. */
+        val RETRY_WAITS = listOf(2.seconds, 5.seconds)
 
         fun Double.toCents(): Long = (this * 100).roundToLong()
 

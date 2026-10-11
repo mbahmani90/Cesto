@@ -10,7 +10,10 @@ import com.majidbahmani.cesto.feature.chat.domain.model.ModelReply
 import com.majidbahmani.cesto.feature.chat.domain.model.ToolCall
 import com.majidbahmani.cesto.llm.GeminiApi
 import com.majidbahmani.cesto.llm.GeminiEmptyResponseException
+import com.majidbahmani.cesto.llm.GeminiModel
 import com.majidbahmani.cesto.llm.data.local.GeminiKeyStore
+import com.majidbahmani.cesto.llm.data.local.GeminiModelStore
+import com.majidbahmani.cesto.llm.data.local.current
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.ServerResponseException
@@ -40,6 +43,7 @@ import kotlinx.serialization.json.putJsonObject
 class GeminiAgentModel(
     private val gemini: GeminiApi,
     private val keys: GeminiKeyStore,
+    private val models: GeminiModelStore,
     private val prompt: ReceiptAgentPrompt,
     private val retryWaitMillis: Long = RETRY_WAIT_MILLIS
 ) : AgentModel {
@@ -48,15 +52,15 @@ class GeminiAgentModel(
 
     override suspend fun reply(conversation: List<AgentTurn>): ModelReply {
         val key = keys.key.first()?.takeIf { it.isNotBlank() } ?: throw AgentUnavailableException(AskFailure.NO_KEY)
-        val content = generate(key, prompt.build(), conversation.map { it.toContent() })
+        val content = generate(key, models.current(), prompt.build(), conversation.map { it.toContent() })
         return content.toReply()
     }
 
     /** One retry after an overload (503); other errors end the question with a reason the screen can show. */
-    private suspend fun generate(key: String, systemInstruction: String, contents: List<JsonObject>): JsonObject {
+    private suspend fun generate(key: String, model: GeminiModel, systemInstruction: String, contents: List<JsonObject>): JsonObject {
         repeat(2) { attempt ->
             try {
-                return gemini.generateContent(key, systemInstruction, contents, receiptToolDeclarations)
+                return gemini.generateContent(key, systemInstruction, contents, receiptToolDeclarations, model)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: ServerResponseException) {
