@@ -8,12 +8,12 @@ import com.majidbahmani.cesto.feature.chat.domain.model.AgentUnavailableExceptio
 import com.majidbahmani.cesto.feature.chat.domain.model.AskFailure
 import com.majidbahmani.cesto.feature.chat.domain.model.ModelReply
 import com.majidbahmani.cesto.feature.chat.domain.model.ToolCall
-import com.majidbahmani.cesto.llm.GeminiApi
-import com.majidbahmani.cesto.llm.GeminiEmptyResponseException
 import com.majidbahmani.cesto.llm.GeminiModel
 import com.majidbahmani.cesto.llm.data.local.GeminiKeyStore
 import com.majidbahmani.cesto.llm.data.local.GeminiModelStore
 import com.majidbahmani.cesto.llm.data.local.current
+import com.majidbahmani.cesto.llm.data.remote.GeminiApi
+import com.majidbahmani.cesto.llm.data.remote.GeminiEmptyResponseException
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.ServerResponseException

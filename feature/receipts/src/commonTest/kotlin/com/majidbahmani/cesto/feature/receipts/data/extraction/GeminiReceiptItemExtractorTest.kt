@@ -2,8 +2,8 @@ package com.majidbahmani.cesto.feature.receipts.data.extraction
 
 import com.majidbahmani.cesto.core.network.createHttpClient
 import com.majidbahmani.cesto.feature.receipts.fake.FakeGeminiModelStore
-import com.majidbahmani.cesto.llm.GeminiApi
 import com.majidbahmani.cesto.llm.GeminiModel
+import com.majidbahmani.cesto.llm.data.remote.GeminiApi
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData

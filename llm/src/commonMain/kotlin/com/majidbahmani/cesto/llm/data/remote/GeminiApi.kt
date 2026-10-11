@@ -1,10 +1,11 @@
-package com.majidbahmani.cesto.llm
+package com.majidbahmani.cesto.llm.data.remote
 
-import com.majidbahmani.cesto.llm.dto.ContentDto
-import com.majidbahmani.cesto.llm.dto.GenerateContentRequestDto
-import com.majidbahmani.cesto.llm.dto.GenerateContentResponseDto
-import com.majidbahmani.cesto.llm.dto.GenerationConfigDto
-import com.majidbahmani.cesto.llm.dto.PartDto
+import com.majidbahmani.cesto.llm.GeminiModel
+import com.majidbahmani.cesto.llm.data.remote.dto.ContentDto
+import com.majidbahmani.cesto.llm.data.remote.dto.GenerateContentRequestDto
+import com.majidbahmani.cesto.llm.data.remote.dto.GenerateContentResponseDto
+import com.majidbahmani.cesto.llm.data.remote.dto.GenerationConfigDto
+import com.majidbahmani.cesto.llm.data.remote.dto.PartDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
