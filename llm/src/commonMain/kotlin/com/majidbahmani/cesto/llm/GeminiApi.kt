@@ -84,9 +84,9 @@ class GeminiApi(private val client: HttpClient) {
         systemInstruction: String,
         prompt: String,
         responseSchema: JsonObject,
-        model: String = EXTRACTION_MODEL
+        model: GeminiModel
     ): String {
-        val response: GenerateContentResponseDto = client.post(BASE_URL + "models/$model:generateContent") {
+        val response: GenerateContentResponseDto = client.post(BASE_URL + "models/${model.id}:generateContent") {
             header(API_KEY_HEADER, key)
             contentType(ContentType.Application.Json)
             // Generating takes longer than the client's defaults.
@@ -121,7 +121,7 @@ class GeminiApi(private val client: HttpClient) {
         systemInstruction: String,
         contents: List<JsonObject>,
         functionDeclarations: JsonArray,
-        model: String = CHAT_MODEL
+        model: GeminiModel
     ): JsonObject {
         val body = buildJsonObject {
             putJsonArray("contents") { contents.forEach { add(it) } }
@@ -131,7 +131,7 @@ class GeminiApi(private val client: HttpClient) {
             putJsonArray("tools") { add(buildJsonObject { put("functionDeclarations", functionDeclarations) }) }
             putJsonObject("generationConfig") { put("temperature", 0.2) }
         }
-        val response: JsonObject = client.post(BASE_URL + "models/$model:generateContent") {
+        val response: JsonObject = client.post(BASE_URL + "models/${model.id}:generateContent") {
             header(API_KEY_HEADER, key)
             contentType(ContentType.Application.Json)
             timeout {
@@ -184,15 +184,6 @@ class GeminiApi(private val client: HttpClient) {
     }
 
     companion object {
-        /** Current Flash model (checked in Google's model list, Oct 2026); one place to switch. */
-        const val EXTRACTION_MODEL = "gemini-3.8-flash"
-
-        /** The agent loop: tool choice and the answer text. */
-        const val CHAT_MODEL = "gemini-3.8-flash"
-
-        /** Cheaper, separate capacity: used when the main model is overloaded (503). */
-        const val FALLBACK_MODEL = "gemini-3.5-flash-lite"
-
         /** Text embeddings for semantic search (checked in Google's docs, Oct 2026: gemini-embedding-001 is legacy). */
         const val EMBEDDING_MODEL = "gemini-embedding-2"
 

@@ -8,8 +8,10 @@ import com.majidbahmani.cesto.feature.chat.domain.model.AskFailure
 import com.majidbahmani.cesto.feature.chat.domain.model.ModelReply
 import com.majidbahmani.cesto.feature.chat.domain.model.ToolResult
 import com.majidbahmani.cesto.feature.chat.fake.FakeGeminiKeyStore
+import com.majidbahmani.cesto.feature.chat.fake.FakeGeminiModelStore
 import com.majidbahmani.cesto.feature.chat.fake.createTestDriver
 import com.majidbahmani.cesto.llm.GeminiApi
+import com.majidbahmani.cesto.llm.GeminiModel
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -36,7 +38,9 @@ import kotlinx.serialization.json.put
 class GeminiAgentModelTest {
 
     private val bodies = mutableListOf<JsonObject>()
+    private val urls = mutableListOf<String>()
     private val keys = FakeGeminiKeyStore()
+    private val models = FakeGeminiModelStore()
 
     private val prompt = ReceiptAgentPrompt(
         database = CestoDatabase(createTestDriver()),
@@ -49,10 +53,11 @@ class GeminiAgentModelTest {
         val queue = ArrayDeque(answers.toList())
         val engine = MockEngine { request ->
             bodies += Json.parseToJsonElement((request.body as TextContent).text).jsonObject
+            urls += request.url.toString()
             val (status, body) = queue.removeFirst()
             respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
         }
-        return GeminiAgentModel(GeminiApi(createHttpClient(engine)), keys, prompt, retryWaitMillis = 0)
+        return GeminiAgentModel(GeminiApi(createHttpClient(engine)), keys, models, prompt, retryWaitMillis = 0)
     }
 
     private fun ok(content: String) = HttpStatusCode.OK to """{"candidates":[{"content":$content,"finishReason":"STOP"}]}"""
@@ -123,8 +128,21 @@ class GeminiAgentModelTest {
     }
 
     @Test
+    fun nothingSaved_usesTheDefaultModel_thenTheChosenOne() = runTest {
+        val answer = ok("""{"role":"model","parts":[{"text":"ok"}]}""")
+        val model = model(answer, answer)
+
+        model.reply(listOf(AgentTurn.User("q")))
+        models.save(GeminiModel.FLASH_2_5)
+        model.reply(listOf(AgentTurn.User("q")))
+
+        assertTrue(urls[0].contains("/models/${GeminiModel.DEFAULT.id}:"))
+        assertTrue(urls[1].contains("/models/gemini-2.5-flash:"))
+    }
+
+    @Test
     fun offline_isNoConnection() = runTest {
-        val model = GeminiAgentModel(GeminiApi(createHttpClient(MockEngine { throw IOException("offline") })), keys, prompt)
+        val model = GeminiAgentModel(GeminiApi(createHttpClient(MockEngine { throw IOException("offline") })), keys, models, prompt)
 
         assertFailure(AskFailure.NO_CONNECTION, model)
     }
