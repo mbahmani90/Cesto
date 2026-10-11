@@ -37,6 +37,19 @@
     <string name="settings_billing_text">On the free tier, Gemini allows only a few requests a minute, and Google may use what you send (your receipt items and questions) to improve its products. Turn on billing for the key’s project to raise the limit and keep your data out of training. In Google AI Studio, choose “Set up billing” next to your key.</string>
     <string name="settings_billing_button">Enable billing</string>
 
+    <string name="settings_model_title">Gemini model</string>
+    <string name="settings_model_intro">The model that reads the items on your receipts and answers your questions. A change applies from the next request.</string>
+    <string name="settings_model_change">Change</string>
+    <string name="settings_model_flash_3_8">Gemini 3.8 Flash</string>
+    <string name="settings_model_flash_3_8_text">Newest and most capable</string>
+    <string name="settings_model_flash_lite_3_5">Gemini 3.5 Flash-Lite</string>
+    <string name="settings_model_flash_lite_3_5_text">Newer, lighter and faster</string>
+    <string name="settings_model_flash_2_5">Gemini 2.5 Flash</string>
+    <string name="settings_model_flash_2_5_text">Previous generation</string>
+    <string name="settings_model_flash_lite_2_5">Gemini 2.5 Flash-Lite</string>
+    <string name="settings_model_flash_lite_2_5_text">Previous generation, lighter</string>
+    <string name="settings_model_2_5_note">Google may offer 2.5 models only to keys that used them recently. If questions or receipts fail with a 2.5 model, choose a newer one.</string>
+
     <string name="settings_result_saved">Key works and is saved.</string>
     <string name="settings_result_empty">Paste your key first.</string>
     <string name="settings_result_invalid">Google says this isn’t a valid API key. Copy it again from Google AI Studio.</string>
