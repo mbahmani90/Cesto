@@ -1,4 +1,4 @@
-package com.majidbahmani.cesto.llm
+package com.majidbahmani.cesto.llm.data.local
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

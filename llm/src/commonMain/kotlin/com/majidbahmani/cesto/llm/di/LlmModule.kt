@@ -3,9 +3,9 @@ package com.majidbahmani.cesto.llm.di
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
-import com.majidbahmani.cesto.llm.DataStoreGeminiModelStore
 import com.majidbahmani.cesto.llm.GeminiApi
-import com.majidbahmani.cesto.llm.GeminiModelStore
+import com.majidbahmani.cesto.llm.data.local.DataStoreGeminiModelStore
+import com.majidbahmani.cesto.llm.data.local.GeminiModelStore
 import com.majidbahmani.cesto.llm.embedding.EmbeddingProvider
 import com.majidbahmani.cesto.llm.embedding.GeminiEmbeddingProvider
 import okio.Path.Companion.toPath

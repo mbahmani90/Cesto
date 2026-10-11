@@ -4,8 +4,8 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.majidbahmani.cesto.core.di.IoDispatcher
-import com.majidbahmani.cesto.llm.AndroidGeminiKeyStore
-import com.majidbahmani.cesto.llm.GeminiKeyStore
+import com.majidbahmani.cesto.llm.data.local.AndroidGeminiKeyStore
+import com.majidbahmani.cesto.llm.data.local.GeminiKeyStore
 import org.koin.core.module.Module
 import org.koin.dsl.module
 

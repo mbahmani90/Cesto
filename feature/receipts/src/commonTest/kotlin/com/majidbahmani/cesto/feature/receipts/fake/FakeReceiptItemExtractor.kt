@@ -26,7 +26,7 @@ class FakeReceiptItemExtractor(var lines: List<ExtractedLine> = listOf(milk, ban
     }
 }
 
-class FakeGeminiKeyStore(initial: String? = "AIza-test") : com.majidbahmani.cesto.llm.GeminiKeyStore {
+class FakeGeminiKeyStore(initial: String? = "AIza-test") : com.majidbahmani.cesto.llm.data.local.GeminiKeyStore {
     override val key = kotlinx.coroutines.flow.MutableStateFlow(initial)
     override suspend fun save(key: String) {
         this.key.value = key

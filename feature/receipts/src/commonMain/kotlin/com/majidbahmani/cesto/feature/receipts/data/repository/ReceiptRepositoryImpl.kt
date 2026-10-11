@@ -25,7 +25,7 @@ import com.majidbahmani.cesto.feature.receipts.domain.model.ReceiptStatus
 import com.majidbahmani.cesto.feature.receipts.domain.model.SyncFailure
 import com.majidbahmani.cesto.feature.receipts.domain.model.SyncResult
 import com.majidbahmani.cesto.feature.receipts.domain.repository.ReceiptRepository
-import com.majidbahmani.cesto.llm.GeminiKeyStore
+import com.majidbahmani.cesto.llm.data.local.GeminiKeyStore
 import com.majidbahmani.cesto.llm.embedding.EmbeddingProvider
 import com.majidbahmani.cesto.llm.embedding.EmbeddingUnavailableException
 import kotlinx.coroutines.CancellationException
