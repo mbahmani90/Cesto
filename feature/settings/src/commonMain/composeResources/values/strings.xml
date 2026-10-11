@@ -22,13 +22,11 @@
     <string name="settings_test_and_save">Test and save</string>
     <string name="settings_cancel">Cancel</string>
 
-    <string name="settings_saved_key">Your key</string>
+    <string name="settings_saved_key">Gemini key</string>
     <string name="settings_saved_key_working">Saved and working</string>
     <string name="settings_change">Change</string>
     <string name="settings_remove">Remove</string>
 
-    <string name="settings_billing_title">Billing</string>
-    <string name="settings_billing_text">On the free tier, Gemini allows only a few requests a minute, and Google may use what you send (your receipt items and questions) to improve its products. Turn on billing for the key’s project to raise the limit and keep your data out of training. In Google AI Studio, choose “Set up billing” next to your key.</string>
     <string name="settings_billing_button">Enable billing</string>
 
     <string name="settings_model_title">Gemini model</string>
@@ -42,7 +40,6 @@
     <string name="settings_model_flash_lite_2_5">Gemini 2.5 Flash-Lite</string>
     <string name="settings_model_flash_lite_2_5_text">Previous generation, lighter</string>
 
-    <string name="settings_result_saved">Key works and is saved.</string>
     <string name="settings_result_empty">Paste your key first.</string>
     <string name="settings_result_invalid">Google says this isn’t a valid API key. Copy it again from Google AI Studio.</string>
     <string name="settings_result_not_allowed">The key works, but its project can’t use the Gemini API yet. Check in Google AI Studio that the key belongs to the right project.</string>
