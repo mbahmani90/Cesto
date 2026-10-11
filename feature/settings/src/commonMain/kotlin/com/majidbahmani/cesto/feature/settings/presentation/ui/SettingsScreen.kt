@@ -33,10 +33,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,15 +51,11 @@ import com.majidbahmani.cesto.feature.settings.presentation.mapper.withGoogleAcc
 import com.majidbahmani.cesto.feature.settings.presentation.viewmodel.SettingsUiState
 import com.majidbahmani.cesto.feature.settings.presentation.viewmodel.SettingsViewModel
 import com.majidbahmani.cesto.feature.settings.resources.Res
-import com.majidbahmani.cesto.feature.settings.resources.settings_account_hint
 import com.majidbahmani.cesto.feature.settings.resources.settings_account_invalid
 import com.majidbahmani.cesto.feature.settings.resources.settings_account_label
 import com.majidbahmani.cesto.feature.settings.resources.settings_billing_button
-import com.majidbahmani.cesto.feature.settings.resources.settings_billing_text
-import com.majidbahmani.cesto.feature.settings.resources.settings_billing_title
 import com.majidbahmani.cesto.feature.settings.resources.settings_cancel
 import com.majidbahmani.cesto.feature.settings.resources.settings_change
-import com.majidbahmani.cesto.feature.settings.resources.settings_gemini_intro
 import com.majidbahmani.cesto.feature.settings.resources.settings_gemini_title
 import com.majidbahmani.cesto.feature.settings.resources.settings_key_hide
 import com.majidbahmani.cesto.feature.settings.resources.settings_key_label
@@ -67,14 +66,11 @@ import com.majidbahmani.cesto.feature.settings.resources.settings_result_failed
 import com.majidbahmani.cesto.feature.settings.resources.settings_result_invalid
 import com.majidbahmani.cesto.feature.settings.resources.settings_result_no_connection
 import com.majidbahmani.cesto.feature.settings.resources.settings_result_not_allowed
-import com.majidbahmani.cesto.feature.settings.resources.settings_result_saved
 import com.majidbahmani.cesto.feature.settings.resources.settings_saved_key
 import com.majidbahmani.cesto.feature.settings.resources.settings_saved_key_working
 import com.majidbahmani.cesto.feature.settings.resources.settings_step1_button
-import com.majidbahmani.cesto.feature.settings.resources.settings_step1_text
 import com.majidbahmani.cesto.feature.settings.resources.settings_step1_title
 import com.majidbahmani.cesto.feature.settings.resources.settings_step2_button
-import com.majidbahmani.cesto.feature.settings.resources.settings_step2_text
 import com.majidbahmani.cesto.feature.settings.resources.settings_step2_title
 import com.majidbahmani.cesto.feature.settings.resources.settings_test_and_save
 import com.majidbahmani.cesto.feature.settings.resources.settings_title
@@ -141,14 +137,7 @@ internal fun SettingsScreen(
         ) {
             CestoScreenTitle(stringResource(Res.string.settings_title))
 
-            accountSection()
-
-            Text(stringResource(Res.string.settings_gemini_title), style = MaterialTheme.typography.titleLarge)
-            Text(
-                text = stringResource(Res.string.settings_gemini_intro),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            modelSection()
 
             when {
                 uiState.isLoading -> Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -159,40 +148,32 @@ internal fun SettingsScreen(
                     SavedKeyCard(
                         masked = uiState.savedKeyMasked,
                         onChangeKey = onChangeKey,
+                        onOpenBilling = onOpenBilling,
                         onRemoveKey = onRemoveKey
                     )
-                    BillingCard(onOpenBilling = onOpenBilling)
                 }
 
                 else -> {
-                    AccountField(email = uiState.accountEmail, onEmailChange = onAccountEmailChange)
-                    StepCard(
-                        number = 1,
-                        title = Res.string.settings_step1_title,
-                        text = Res.string.settings_step1_text,
-                        button = Res.string.settings_step1_button,
-                        onClick = onOpenCloudConsole
-                    )
-                    StepCard(
-                        number = 2,
-                        title = Res.string.settings_step2_title,
-                        text = Res.string.settings_step2_text,
-                        button = Res.string.settings_step2_button,
-                        onClick = onOpenAiStudio
-                    )
-                    KeyEntry(
-                        uiState = uiState,
-                        onKeyInputChange = onKeyInputChange,
-                        onToggleKeyVisibility = onToggleKeyVisibility,
-                        onTestAndSave = onTestAndSave,
-                        onCancelChange = onCancelChange
-                    )
+                    GeminiKeyCard(
+                        email = uiState.accountEmail,
+                        onEmailChange = onAccountEmailChange,
+                        onOpenCloudConsole = onOpenCloudConsole,
+                        onOpenAiStudio = onOpenAiStudio
+                    ) {
+                        KeyEntry(
+                            uiState = uiState,
+                            onKeyInputChange = onKeyInputChange,
+                            onToggleKeyVisibility = onToggleKeyVisibility,
+                            onTestAndSave = onTestAndSave,
+                            onCancelChange = onCancelChange
+                        )
+                    }
                 }
             }
 
             uiState.feedback?.let { Feedback(it) }
 
-            modelSection()
+            accountSection()
         }
     }
 }
@@ -207,8 +188,11 @@ private fun AccountField(email: String, onEmailChange: (String) -> Unit) {
         placeholder = { Text("name@gmail.com") },
         singleLine = true,
         isError = invalid,
-        supportingText = {
-            Text(stringResource(if (invalid) Res.string.settings_account_invalid else Res.string.settings_account_hint))
+        // Only a wrong email gets a line below the field.
+        supportingText = if (invalid) {
+            { Text(stringResource(Res.string.settings_account_invalid)) }
+        } else {
+            null
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, autoCorrectEnabled = false),
         modifier = Modifier.fillMaxWidth()
@@ -216,25 +200,47 @@ private fun AccountField(email: String, onEmailChange: (String) -> Unit) {
 }
 
 @Composable
-private fun StepCard(number: Int, title: StringResource, text: StringResource, button: StringResource, onClick: () -> Unit) {
+private fun GeminiTitle() {
+    Text(stringResource(Res.string.settings_gemini_title), style = MaterialTheme.typography.titleLarge)
+}
+
+/** "Gemini Key", the account the steps open with, the two steps, then [keyEntry] to paste and save the key. */
+@Composable
+private fun GeminiKeyCard(
+    email: String,
+    onEmailChange: (String) -> Unit,
+    onOpenCloudConsole: () -> Unit,
+    onOpenAiStudio: () -> Unit,
+    keyEntry: @Composable () -> Unit
+) {
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp)) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = number.toString(),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-                Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
-            }
-            Text(stringResource(text), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            OutlinedButton(onClick = onClick) { Text(stringResource(button)) }
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            GeminiTitle()
+            AccountField(email = email, onEmailChange = onEmailChange)
+            Step(number = 1, title = Res.string.settings_step1_title, button = Res.string.settings_step1_button, onClick = onOpenCloudConsole)
+            Step(number = 2, title = Res.string.settings_step2_title, button = Res.string.settings_step2_button, onClick = onOpenAiStudio)
+            keyEntry()
         }
+    }
+}
+
+@Composable
+private fun Step(number: Int, title: StringResource, button: StringResource, onClick: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp)) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = number.toString(),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
+        }
+        OutlinedButton(onClick = onClick) { Text(stringResource(button)) }
     }
 }
 
@@ -262,7 +268,18 @@ private fun KeyEntry(
             },
             modifier = Modifier.fillMaxWidth()
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        // Right-aligned, "Cancel" before the main action.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Only when replacing a saved key: without one there's nothing to go back to.
+            if (uiState.savedKeyMasked != null) {
+                TextButton(onClick = onCancelChange, enabled = !uiState.isTesting) {
+                    Text(stringResource(Res.string.settings_cancel))
+                }
+            }
             Button(onClick = onTestAndSave, enabled = !uiState.isTesting, modifier = Modifier.height(48.dp)) {
                 if (uiState.isTesting) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -270,59 +287,52 @@ private fun KeyEntry(
                     Text(stringResource(Res.string.settings_test_and_save))
                 }
             }
-            // Only when replacing a saved key: without one there's nothing to go back to.
-            if (uiState.savedKeyMasked != null) {
-                TextButton(onClick = onCancelChange, enabled = !uiState.isTesting) {
-                    Text(stringResource(Res.string.settings_cancel))
-                }
-            }
         }
     }
 }
 
+/** "Enable billing" is shown for every saved key: the app can't see a key's plan (no API for it). */
 @Composable
-private fun SavedKeyCard(masked: String, onChangeKey: () -> Unit, onRemoveKey: () -> Unit) {
+private fun SavedKeyCard(masked: String, onChangeKey: () -> Unit, onOpenBilling: () -> Unit, onRemoveKey: () -> Unit) {
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(stringResource(Res.string.settings_saved_key), style = MaterialTheme.typography.titleMedium)
-            Text(masked, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+            // "Gemini key: AIza…08f0", the key in bold.
+            Text(
+                text = buildAnnotatedString {
+                    append(stringResource(Res.string.settings_saved_key))
+                    append(": ")
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(masked) }
+                },
+                style = MaterialTheme.typography.titleMedium
+            )
             Text(
                 text = stringResource(Res.string.settings_saved_key_working),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(Modifier.height(4.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onChangeKey) { Text(stringResource(Res.string.settings_change)) }
-                TextButton(onClick = onRemoveKey) {
-                    Text(stringResource(Res.string.settings_remove), color = MaterialTheme.colorScheme.error)
+            // Smaller buttons so all three fit in one row.
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                OutlinedButton(onClick = onChangeKey, contentPadding = SmallButtonPadding, modifier = Modifier.height(36.dp)) {
+                    Text(stringResource(Res.string.settings_change), style = MaterialTheme.typography.labelMedium)
+                }
+                OutlinedButton(onClick = onOpenBilling, contentPadding = SmallButtonPadding, modifier = Modifier.height(36.dp)) {
+                    Text(stringResource(Res.string.settings_billing_button), style = MaterialTheme.typography.labelMedium)
+                }
+                TextButton(onClick = onRemoveKey, contentPadding = SmallButtonPadding, modifier = Modifier.height(36.dp)) {
+                    Text(stringResource(Res.string.settings_remove), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
                 }
             }
         }
     }
 }
 
-/** The app can't see a key's plan (no API for it), so this is shown for every saved key. */
-@Composable
-private fun BillingCard(onOpenBilling: () -> Unit) {
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(Res.string.settings_billing_title), style = MaterialTheme.typography.titleMedium)
-            Text(
-                text = stringResource(Res.string.settings_billing_text),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            OutlinedButton(onClick = onOpenBilling) { Text(stringResource(Res.string.settings_billing_button)) }
-        }
-    }
-}
+private val SmallButtonPadding = PaddingValues(horizontal = 12.dp)
 
 @Composable
 private fun Feedback(result: SaveKeyResult) {
-    val isSuccess = result == SaveKeyResult.SAVED
     val text = when (result) {
-        SaveKeyResult.SAVED -> Res.string.settings_result_saved
+        SaveKeyResult.SAVED -> return // the key card's "Saved and working" already says it
         SaveKeyResult.EMPTY -> Res.string.settings_result_empty
         SaveKeyResult.INVALID_KEY -> Res.string.settings_result_invalid
         SaveKeyResult.NOT_ALLOWED -> Res.string.settings_result_not_allowed
@@ -330,8 +340,8 @@ private fun Feedback(result: SaveKeyResult) {
         SaveKeyResult.FAILED -> Res.string.settings_result_failed
     }
     Surface(
-        color = if (isSuccess) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.errorContainer,
-        contentColor = if (isSuccess) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onErrorContainer,
+        color = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
         shape = MaterialTheme.shapes.medium,
         modifier = Modifier.fillMaxWidth()
     ) {

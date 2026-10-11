@@ -3,11 +3,14 @@ package com.majidbahmani.cesto.feature.onboarding.presentation.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -16,6 +19,8 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -26,6 +31,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -79,48 +86,60 @@ internal fun OnboardingScreen(uiState: OnboardingUiState, onContinue: () -> Unit
     }
 }
 
-/** One card in the middle: logo, name and the button. What Cesto may read is shown by Google's own consent dialog. */
+/** The name at the top, then one card in the middle: logo and the button. What Cesto may read is shown by Google's own consent dialog. */
 @Composable
 private fun IntroContent(isBusy: Boolean, signedIn: Boolean, error: ErrorReason?, onContinue: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .verticalScroll(rememberScrollState()) // small screens, large fonts, a long error message
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            shape = MaterialTheme.shapes.extraLarge,
-            modifier = Modifier.widthIn(max = 400.dp).fillMaxWidth()
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState()) // small screens, large fonts, a long error message
+                .heightIn(min = maxHeight) // at least the screen, so the name stays at the top and the card in the middle
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Text(
+                text = stringResource(Res.string.onboarding_title),
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+                fontStyle = FontStyle.Italic,
+                color = MaterialTheme.colorScheme.primary
+            )
+            val cardShape = MaterialTheme.shapes.extraLarge
+            val glow = MaterialTheme.colorScheme.primary
+            Card(
+                shape = cardShape,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                modifier = Modifier
+                    .widthIn(max = 400.dp)
+                    .fillMaxWidth()
+                    // A green shadow instead of the Card's own black one, which can't be seen on the dark background.
+                    .shadow(elevation = 12.dp, shape = cardShape, ambientColor = glow, spotColor = glow)
             ) {
-                // The app icon's drawing; the name below says it, so no description for screen readers.
-                Image(painter = painterResource(Res.drawable.cesto_logo), contentDescription = null, modifier = Modifier.size(96.dp))
-                Text(
-                    text = stringResource(Res.string.onboarding_title),
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                if (error != null) ErrorMessage(error)
-                Button(
-                    onClick = onContinue,
-                    enabled = !isBusy,
-                    modifier = Modifier.fillMaxWidth().height(52.dp)
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    if (isBusy) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                    } else {
-                        Text(stringResource(if (signedIn) Res.string.onboarding_connect else Res.string.onboarding_continue_google))
+                    // The app icon's drawing; the name above says it, so no description for screen readers.
+                    Image(painter = painterResource(Res.drawable.cesto_logo), contentDescription = null, modifier = Modifier.size(96.dp))
+                    if (error != null) ErrorMessage(error)
+                    Button(
+                        onClick = onContinue,
+                        enabled = !isBusy,
+                        modifier = Modifier.fillMaxWidth().height(52.dp)
+                    ) {
+                        if (isBusy) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text(stringResource(if (signedIn) Res.string.onboarding_connect else Res.string.onboarding_continue_google))
+                        }
                     }
                 }
             }
+            // Empty last child: with SpaceBetween it keeps the card centred in the space below the name.
+            Spacer(Modifier)
         }
     }
 }

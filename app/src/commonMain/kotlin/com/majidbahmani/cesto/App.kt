@@ -96,7 +96,7 @@ fun App(modifier: Modifier = Modifier) {
     }
 }
 
-/** Floating pill (doc 35, style B): rounded, translucent, away from the screen edges. */
+/** Floating pill (doc 35, style B): rounded, away from the screen edges. */
 @Composable
 private fun FloatingPillBar(navController: NavHostController, currentDestination: NavDestination?) {
     Box(
@@ -108,9 +108,7 @@ private fun FloatingPillBar(navController: NavHostController, currentDestination
     ) {
         Surface(
             shape = CircleShape,
-            // Alpha on the color, not Modifier.alpha: icons and labels stay fully opaque.
-            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.7f),
-            shadowElevation = 8.dp
+            color = MaterialTheme.colorScheme.surfaceContainer
         ) {
             Row(
                 modifier = Modifier.selectableGroup().padding(horizontal = 8.dp, vertical = 6.dp),
