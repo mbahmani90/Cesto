@@ -10,7 +10,7 @@ import com.majidbahmani.cesto.feature.chat.domain.model.ModelReply
 import com.majidbahmani.cesto.feature.chat.domain.model.ToolCall
 import com.majidbahmani.cesto.llm.GeminiApi
 import com.majidbahmani.cesto.llm.GeminiEmptyResponseException
-import com.majidbahmani.cesto.llm.GeminiKeyStore
+import com.majidbahmani.cesto.llm.data.local.GeminiKeyStore
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.ServerResponseException

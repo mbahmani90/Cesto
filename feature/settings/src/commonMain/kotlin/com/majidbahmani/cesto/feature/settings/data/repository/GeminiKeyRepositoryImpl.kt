@@ -3,8 +3,8 @@ package com.majidbahmani.cesto.feature.settings.data.repository
 import com.majidbahmani.cesto.feature.settings.domain.model.SaveKeyResult
 import com.majidbahmani.cesto.feature.settings.domain.repository.GeminiKeyRepository
 import com.majidbahmani.cesto.llm.GeminiApi
-import com.majidbahmani.cesto.llm.GeminiKeyStore
 import com.majidbahmani.cesto.llm.KeyCheck
+import com.majidbahmani.cesto.llm.data.local.GeminiKeyStore
 import kotlinx.coroutines.flow.Flow
 
 class GeminiKeyRepositoryImpl(private val store: GeminiKeyStore, private val gemini: GeminiApi) : GeminiKeyRepository {

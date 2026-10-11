@@ -16,7 +16,7 @@ import com.majidbahmani.cesto.gmailauth.GmailAuthError
 import com.majidbahmani.cesto.gmailauth.GmailAuthorizer
 import com.majidbahmani.cesto.gmailauth.GoogleIdTokenProvider
 import com.majidbahmani.cesto.gmailauth.GoogleSignInError
-import com.majidbahmani.cesto.llm.GeminiKeyStore
+import com.majidbahmani.cesto.llm.data.local.GeminiKeyStore
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import kotlin.test.AfterTest

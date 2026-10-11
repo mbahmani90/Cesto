@@ -2,8 +2,8 @@ package com.majidbahmani.cesto.llm.di
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import com.majidbahmani.cesto.llm.GeminiKeyStore
-import com.majidbahmani.cesto.llm.InMemoryGeminiKeyStore
+import com.majidbahmani.cesto.llm.data.local.GeminiKeyStore
+import com.majidbahmani.cesto.llm.data.local.InMemoryGeminiKeyStore
 import kotlinx.cinterop.ExperimentalForeignApi
 import org.koin.core.module.Module
 import org.koin.dsl.module

@@ -1,5 +1,6 @@
-package com.majidbahmani.cesto.llm
+package com.majidbahmani.cesto.llm.data.local
 
+import com.majidbahmani.cesto.llm.GeminiModel
 import kotlinx.coroutines.flow.Flow
 
 /** The Gemini model chosen in Settings. Storage only: the caller applies [GeminiModel.DEFAULT]. */
