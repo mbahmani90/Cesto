@@ -1,5 +1,6 @@
 package com.majidbahmani.cesto.llm.di
 
+import androidx.datastore.core.DataMigration
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
@@ -15,12 +16,12 @@ import org.koin.dsl.module
 /** Per platform: the GeminiKeyStore and the settings DataStore (Android needs the Koin Android context). */
 internal expect val llmPlatformModule: Module
 
-/** Must end with .preferences_pb. */
+/** Plain settings. File names must end with .preferences_pb. */
 internal const val SETTINGS_FILE = "cesto_settings.preferences_pb"
 
 /** One DataStore per file: only create it inside a Koin `single`. [path] is read lazily, off the main thread. */
-internal fun settingsDataStore(path: () -> String): DataStore<Preferences> =
-    PreferenceDataStoreFactory.createWithPath(produceFile = { path().toPath() })
+internal fun preferencesDataStore(migrations: List<DataMigration<Preferences>> = emptyList(), path: () -> String): DataStore<Preferences> =
+    PreferenceDataStoreFactory.createWithPath(migrations = migrations, produceFile = { path().toPath() })
 
 /** Needs the HttpClient from :core. */
 val llmModule = module {
