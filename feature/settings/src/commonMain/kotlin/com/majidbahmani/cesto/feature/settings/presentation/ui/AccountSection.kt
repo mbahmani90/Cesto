@@ -86,7 +86,11 @@ internal fun AccountSection(
                     if (uiState.isSigningOut) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     } else {
-                        Text(stringResource(Res.string.settings_sign_out), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
+                        Text(
+                            stringResource(Res.string.settings_sign_out),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                 }
             }

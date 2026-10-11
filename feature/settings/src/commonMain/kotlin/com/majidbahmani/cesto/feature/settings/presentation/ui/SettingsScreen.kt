@@ -217,7 +217,12 @@ private fun GeminiKeyCard(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
             GeminiTitle()
             AccountField(email = email, onEmailChange = onEmailChange)
-            Step(number = 1, title = Res.string.settings_step1_title, button = Res.string.settings_step1_button, onClick = onOpenCloudConsole)
+            Step(
+                number = 1,
+                title = Res.string.settings_step1_title,
+                button = Res.string.settings_step1_button,
+                onClick = onOpenCloudConsole
+            )
             Step(number = 2, title = Res.string.settings_step2_title, button = Res.string.settings_step2_button, onClick = onOpenAiStudio)
             keyEntry()
         }
@@ -320,7 +325,11 @@ private fun SavedKeyCard(masked: String, onChangeKey: () -> Unit, onOpenBilling:
                     Text(stringResource(Res.string.settings_billing_button), style = MaterialTheme.typography.labelMedium)
                 }
                 TextButton(onClick = onRemoveKey, contentPadding = SmallButtonPadding, modifier = Modifier.height(36.dp)) {
-                    Text(stringResource(Res.string.settings_remove), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
+                    Text(
+                        stringResource(Res.string.settings_remove),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }
@@ -332,11 +341,17 @@ private val SmallButtonPadding = PaddingValues(horizontal = 12.dp)
 @Composable
 private fun Feedback(result: SaveKeyResult) {
     val text = when (result) {
-        SaveKeyResult.SAVED -> return // the key card's "Saved and working" already says it
+        SaveKeyResult.SAVED -> return
+
+        // the key card's "Saved and working" already says it
         SaveKeyResult.EMPTY -> Res.string.settings_result_empty
+
         SaveKeyResult.INVALID_KEY -> Res.string.settings_result_invalid
+
         SaveKeyResult.NOT_ALLOWED -> Res.string.settings_result_not_allowed
+
         SaveKeyResult.NO_CONNECTION -> Res.string.settings_result_no_connection
+
         SaveKeyResult.FAILED -> Res.string.settings_result_failed
     }
     Surface(
