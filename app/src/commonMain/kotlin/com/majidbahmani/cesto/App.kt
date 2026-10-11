@@ -26,7 +26,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -107,12 +106,9 @@ private fun FloatingPillBar(navController: NavHostController, currentDestination
             .padding(bottom = 16.dp),
         contentAlignment = Alignment.Center
     ) {
-        val glow = Color.LightGray
         Surface(
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            // A light gray shadow instead of the default black one, which can't be seen on the dark background.
-            modifier = Modifier.shadow(elevation = 2.dp, shape = CircleShape, ambientColor = glow, spotColor = glow)
+            color = MaterialTheme.colorScheme.surfaceContainer
         ) {
             Row(
                 modifier = Modifier.selectableGroup().padding(horizontal = 8.dp, vertical = 6.dp),
