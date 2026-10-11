@@ -21,8 +21,8 @@
     <string name="chat_step_ranking">Ranking your products…</string>
     <string name="chat_step_receipts">Checking your receipts…</string>
     <string name="chat_error_no_key">No Gemini key: add one in Settings.</string>
-    <string name="chat_error_key_rejected">Gemini didn\'t accept your key. Check it in Settings.</string>
-    <string name="chat_error_quota">Your Gemini quota is used up for now. Wait a minute, or enable billing on the key\'s project.</string>
+    <string name="chat_error_key_rejected">Gemini didn’t accept your key. Check it in Settings.</string>
+    <string name="chat_error_quota">Your Gemini quota is used up for now. Wait a minute, or enable billing on the key’s project.</string>
     <string name="chat_error_busy">Gemini is busy right now. Try again in a moment.</string>
     <string name="chat_error_no_connection">No connection to Gemini. Check your internet and try again.</string>
     <string name="chat_error_too_many_steps">That question needed too many steps. Try asking it more simply.</string>
