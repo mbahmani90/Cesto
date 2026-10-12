@@ -1,4 +1,4 @@
-# Every PR and every push to main (doc 30):
+# Every PR, every push to main and manual runs from the Actions tab (doc 30):
 #   Changes ─► Build ─┬─► Unit tests   ─┐
 #                     ├─► Android Lint ─┼─► CI result
 #                     └─► Code style   ─┘
@@ -10,6 +10,7 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 # A new push to the same branch cancels the run in progress.
 concurrency:
@@ -43,7 +44,8 @@ jobs:
   build:
     name: Build
     needs: changes
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    # A manual run always builds, even if the last change was docs only.
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
