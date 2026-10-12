@@ -1,7 +1,8 @@
-# Push a version tag → signed release APK → GitHub Release (doc 31). GitHub only, no Google Play.
+# Push a version tag → signed release APK → GitHub Release (doc 31), plus a signed AAB for Google Play
+# as the `play-bundle` artifact (uploaded by hand: gh run download <run-id> -n play-bundle -D build/play).
 #   git tag v1.0.0 && git push origin v1.0.0
 #
-#   [ Build signed APK ] ──► [ Publish GitHub Release ]
+#   [ Build signed APK + AAB ] ──► [ Publish GitHub Release ]
 #     read-only, signing secrets   contents: write, no secrets
 #
 # Secrets (set once by the owner): CESTO_KEYSTORE_BASE64, CESTO_KEYSTORE_PASSWORD, CESTO_KEY_PASSWORD.
@@ -21,7 +22,7 @@ permissions:
 
 jobs:
   build:
-    name: Build signed APK
+    name: Build signed APK and AAB
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -57,13 +58,13 @@ jobs:
           echo "CESTO_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
 
       # Secrets as environment variables only; the alias and version aren't secrets (they'd be masked in logs).
-      - name: Build signed release APK
+      - name: Build signed release APK and AAB
         env:
           CESTO_KEYSTORE_PASSWORD: ${{ secrets.CESTO_KEYSTORE_PASSWORD }}
           CESTO_KEY_PASSWORD: ${{ secrets.CESTO_KEY_PASSWORD }}
           CESTO_KEY_ALIAS: cesto
         run: >-
-          ./gradlew :androidApp:assembleRelease
+          ./gradlew :androidApp:assembleRelease :androidApp:bundleRelease
           -Pcesto.versionName=${{ steps.version.outputs.name }}
           -Pcesto.versionCode=${{ steps.version.outputs.code }}
 
@@ -75,6 +76,9 @@ jobs:
           APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner"
           "$APKSIGNER" verify "$APK"
           "$APKSIGNER" verify --print-certs "$APK" | grep -E "certificate (DN|SHA-256 digest)" || true
+          AAB=androidApp/build/outputs/bundle/release/androidApp-release.aab
+          [ -f "$AAB" ] || { echo "::error::No AAB"; ls androidApp/build/outputs/bundle/release/; exit 1; }
+          jarsigner -verify "$AAB" | tee /dev/stderr | grep -q "jar verified" || { echo "::error::AAB is not signed"; exit 1; }
 
       - name: Collect release files
         env:
@@ -88,6 +92,21 @@ jobs:
         with:
           name: release-files
           path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+      # Only for Google Play, not the GitHub Release.
+      - name: Collect Play bundle
+        env:
+          VERSION: ${{ steps.version.outputs.name }}
+        run: |
+          mkdir play
+          cp androidApp/build/outputs/bundle/release/androidApp-release.aab "play/cesto-$VERSION.aab"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: play-bundle
+          path: play/
           if-no-files-found: error
           retention-days: 7
 
