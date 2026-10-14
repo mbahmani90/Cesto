@@ -1,12 +1,13 @@
-# Push a version tag → signed release APK → GitHub Release (doc 31), plus a signed AAB for Google Play
-# as the `play-bundle` artifact (uploaded by hand: gh run download <run-id> -n play-bundle -D build/play).
+# Push a version tag → signed release APK → GitHub Release (doc 31), and the signed AAB → Google Play
+# internal testing. Production is a separate, manual step: promote.yml.
 #   git tag v1.0.0 && git push origin v1.0.0
 #
-#   [ Build signed APK + AAB ] ──► [ Publish GitHub Release ]
-#     read-only, signing secrets   contents: write, no secrets
+#   [ Build signed APK + AAB ] ──┬─► [ Publish GitHub Release ]       contents: write, no secrets
+#     read-only, signing secrets └─► [ Upload to Play (internal) ]    Play service account only
 #
 # Secrets (set once by the owner): CESTO_KEYSTORE_BASE64, CESTO_KEYSTORE_PASSWORD, CESTO_KEY_PASSWORD,
-# and the Google config that local.properties holds locally: GOOGLE_WEB_CLIENT_ID, IDENTITY_PLATFORM_API_KEY.
+# the Google config that local.properties holds locally: GOOGLE_WEB_CLIENT_ID, IDENTITY_PLATFORM_API_KEY,
+# and PLAY_SERVICE_ACCOUNT_JSON (service account invited in Play Console → Users and permissions).
 name: Release
 
 on:
@@ -139,3 +140,27 @@ jobs:
           GH_REPO: ${{ github.repository }}
           VERSION: ${{ needs.build.outputs.version }}
         run: gh release create "$GITHUB_REF_NAME" dist/* --title "Cesto $VERSION" --generate-notes --verify-tag
+
+  google-play:
+    name: Upload to Google Play (internal)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: play-bundle
+          path: play
+      - uses: ruby/setup-ruby@v1
+        with: { ruby-version: "3.3" }
+      - run: gem install fastlane --no-document
+      # Only the bundle: the store listing is edited in Play Console, not from the repo.
+      - name: Upload bundle
+        env:
+          SUPPLY_JSON_KEY_DATA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          [ -n "$SUPPLY_JSON_KEY_DATA" ] || { echo "::error::Secret PLAY_SERVICE_ACCOUNT_JSON is missing"; exit 1; }
+          fastlane supply --package_name com.majidbahmani.cesto --aab "play/cesto-$VERSION.aab" \
+            --track internal --release_status completed \
+            --skip_upload_metadata --skip_upload_changelogs --skip_upload_images --skip_upload_screenshots
