@@ -1,0 +1,47 @@
+# Move a version that's already on internal testing to production (Actions → Promote to production → Run).
+# The bundle isn't rebuilt: Play gets the same build the testers used, then reviews it.
+#
+# Secret: PLAY_SERVICE_ACCOUNT_JSON (same as release.yml).
+name: Promote to production
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version on internal testing, e.g. 1.2.3
+        required: true
+
+concurrency:
+  group: promote
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    name: Promote to production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Same rule as release.yml: v1.2.3 → versionCode 10203.
+      - name: Version code
+        id: version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          [[ "$VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || { echo "::error::Version must look like 1.2.3"; exit 1; }
+          echo "code=$(( BASH_REMATCH[1] * 10000 + BASH_REMATCH[2] * 100 + BASH_REMATCH[3] ))" >> "$GITHUB_OUTPUT"
+      - uses: ruby/setup-ruby@v1
+        with: { ruby-version: "3.3" }
+      - run: gem install fastlane --no-document
+      - name: Promote internal → production
+        env:
+          SUPPLY_JSON_KEY_DATA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          [ -n "$SUPPLY_JSON_KEY_DATA" ] || { echo "::error::Secret PLAY_SERVICE_ACCOUNT_JSON is missing"; exit 1; }
+          fastlane supply --package_name com.majidbahmani.cesto \
+            --track internal --track_promote_to production \
+            --version_code ${{ steps.version.outputs.code }} --release_status completed \
+            --skip_upload_apk --skip_upload_aab --skip_upload_metadata --skip_upload_changelogs \
+            --skip_upload_images --skip_upload_screenshots
