@@ -5,7 +5,8 @@
 #   [ Build signed APK + AAB ] ──► [ Publish GitHub Release ]
 #     read-only, signing secrets   contents: write, no secrets
 #
-# Secrets (set once by the owner): CESTO_KEYSTORE_BASE64, CESTO_KEYSTORE_PASSWORD, CESTO_KEY_PASSWORD.
+# Secrets (set once by the owner): CESTO_KEYSTORE_BASE64, CESTO_KEYSTORE_PASSWORD, CESTO_KEY_PASSWORD,
+# and the Google config that local.properties holds locally: GOOGLE_WEB_CLIENT_ID, IDENTITY_PLATFORM_API_KEY.
 name: Release
 
 on:
@@ -63,10 +64,15 @@ jobs:
           CESTO_KEYSTORE_PASSWORD: ${{ secrets.CESTO_KEYSTORE_PASSWORD }}
           CESTO_KEY_PASSWORD: ${{ secrets.CESTO_KEY_PASSWORD }}
           CESTO_KEY_ALIAS: cesto
-        run: >-
-          ./gradlew :androidApp:assembleRelease :androidApp:bundleRelease
-          -Pcesto.versionName=${{ steps.version.outputs.name }}
-          -Pcesto.versionCode=${{ steps.version.outputs.code }}
+          # Without these, Google sign-in fails in the release build (build.gradle.kts reads them into BuildConfig).
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          IDENTITY_PLATFORM_API_KEY: ${{ secrets.IDENTITY_PLATFORM_API_KEY }}
+        run: |
+          [ -n "$GOOGLE_WEB_CLIENT_ID" ] || { echo "::error::Secret GOOGLE_WEB_CLIENT_ID is missing"; exit 1; }
+          [ -n "$IDENTITY_PLATFORM_API_KEY" ] || { echo "::error::Secret IDENTITY_PLATFORM_API_KEY is missing"; exit 1; }
+          ./gradlew :androidApp:assembleRelease :androidApp:bundleRelease \
+            -Pcesto.versionName=${{ steps.version.outputs.name }} \
+            -Pcesto.versionCode=${{ steps.version.outputs.code }}
 
       # The exit code decides; the certificate lines are only for the log.
       - name: Verify signature
